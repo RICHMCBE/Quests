@@ -2,6 +2,8 @@
 
 namespace naeng\Quests\quest;
 
+use naeng\MailCore\data\MailInfo;
+use naeng\MailCore\MailCore;
 use naeng\NaengMailBox\mail\Mail;
 use naeng\Quests\quest\missions\defaults\BreakBlockMission;
 use naeng\Quests\quest\missions\defaults\BringItemMission;
@@ -13,6 +15,8 @@ use NaengUtils\NaengUtils;
 use pocketmine\item\Item;
 use pocketmine\player\Player;
 use pocketmine\Server;
+use RoMo\XuidCore\XuidCore;
+use SOFe\AwaitGenerator\Await;
 
 class Quest{
 
@@ -125,24 +129,55 @@ class Quest{
         if(!$this->isCleared($player)){
             return;
         }
-        $playerClass = $player;
+
+        $xuid = null;
+
         if(is_string($player)){
             $playerClass = Server::getInstance()->getPlayerExact($player);
+            $playerName = $player;
+
+            if($playerClass !== null){
+                $xuid = $playerClass->getXuid();
+            }
+        }else{
+            $playerClass = $player;
+            $playerName = $player->getName();
+            $xuid = $playerClass->getXuid();
         }
-        if($playerClass instanceof Player){
+
+        if($playerClass !== null){
             $playerClass->sendMessage(Quests::PREFIX . "퀘스트 [ {$this->name} ] 를 클리어 하셨습니다!");
         }
+
         $items = $this->getRewardItems();
+
         if(count($items) > 0){
-            (new Mail(title: "퀘스트 [ {$this->name} ] 클리어 보상", senderName: "넹", body: "퀘스트 클리어를 축하드립니다", items: $items))->send($player);
+            Await::f2c(function() use($playerName, $xuid, $items){
+                $xuid ??= yield from XuidCore::getInstance()->getXuidByName($playerName);
+
+                if($xuid === null){
+                    return;
+                }
+
+                if(!(yield from MailCore::getInstance()->send(
+                    new MailInfo(
+                        null,
+                        $xuid,
+                        $this->name . " 클리어 보상",
+                        "퀘스트 클리어 축하드려요!",
+                        0,
+                        $items
+                    )
+                ))){
+                    Server::getInstance()->getLogger()->error("퀘스트 보상 지급 실패: {quest:{$this->name},xuid:{$xuid}");
+                }
+            });
         }
+
         foreach($this->missions as $mission){
             $mission->deleteProgress($player);
         }
-        $playerName = $player;
-        if($player instanceof Player){
-            $playerName = $player->getName();
-        }
+
         $this->clearedPlayers[] = strtolower($playerName);
         // TODO : 섬 진척도 보상 지급
     }

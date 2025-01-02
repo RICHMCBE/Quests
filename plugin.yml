@@ -5,7 +5,9 @@ version: 1.0.0
 api: 5.0.0
 depend:
   - NaengUtils
-  - NaengMailBox
+  - MailCore
+virions:
+  - SOF3/await-generator/master
 permissions:
   quests.staff.command:
     description: "퀘스트를 관리하기 위한 권한입니다"
