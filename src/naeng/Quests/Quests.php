@@ -8,6 +8,7 @@ use naeng\Quests\command\QuestManageCommand;
 use naeng\Quests\quest\QuestFactory;
 use pocketmine\event\block\BlockBreakEvent;
 use pocketmine\event\entity\EntityDamageByEntityEvent;
+use pocketmine\event\entity\EntityDeathEvent;
 use pocketmine\event\Listener;
 use pocketmine\event\player\PlayerChatEvent;
 use pocketmine\event\server\CommandEvent;
@@ -111,6 +112,14 @@ class Quests extends PluginBase implements Listener{
         foreach($this->questFactory->getQuests() as $quest){
             foreach($quest->getMissions() as $mission){
                 $mission->handleEntityDamageByEntityEvent($event);
+            }
+        }
+    }
+
+    public function handleEntityDeathEvent(EntityDeathEvent $event) : void{
+        foreach($this->questFactory->getQuests() as $quest){
+            foreach($quest->getMissions() as $mission){
+                $mission->handleEntityDeathEvent($event);
             }
         }
     }

@@ -5,6 +5,7 @@ namespace naeng\Quests\quest\missions;
 use naeng\Quests\quest\Quest;
 use pocketmine\event\block\BlockBreakEvent;
 use pocketmine\event\entity\EntityDamageByEntityEvent;
+use pocketmine\event\entity\EntityDeathEvent;
 use pocketmine\event\player\PlayerChatEvent;
 use pocketmine\event\server\CommandEvent;
 use pocketmine\player\Player;
@@ -17,7 +18,7 @@ abstract class Mission{
     public function __construct(protected array $playerData = [], protected ?Quest $quest = null){}
 
     final function getName() : string{
-        return self::NAME;
+        return static::NAME;
     }
 
     public function getProgress(Player|string $player, mixed $default = null) : mixed{
@@ -77,5 +78,7 @@ abstract class Mission{
     public function handleCommandEvent(CommandEvent $event) : void{}
 
     public function handleEntityDamageByEntityEvent(EntityDamageByEntityEvent $event) : void{}
+
+    public function handleEntityDeathEvent(EntityDeathEvent $event) : void{}
 
 }

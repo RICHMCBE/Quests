@@ -9,6 +9,7 @@ use naeng\Quests\quest\missions\defaults\BreakBlockMission;
 use naeng\Quests\quest\missions\defaults\BringItemMission;
 use naeng\Quests\quest\missions\defaults\ChatMission;
 use naeng\Quests\quest\missions\defaults\CommandMission;
+use naeng\Quests\quest\missions\defaults\HuntMonsterMission;
 use naeng\Quests\quest\missions\Mission;
 use naeng\Quests\Quests;
 use NaengUtils\NaengUtils;
@@ -237,6 +238,9 @@ class Quest{
                     break;
                 case CommandMission::NAME:
                     $missions[] = CommandMission::jsonDeserialize($jsonSerializedMission);
+                    break;
+                case HuntMonsterMission::NAME:
+                    $missions[] = HuntMonsterMission::jsonDeserialize($jsonSerializedMission);
                     break;
             }
         }
