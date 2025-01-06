@@ -56,6 +56,7 @@ class ChatMission extends Mission{
         if($progress === null){
             return; // 미션과 관련 없는 플레이어
         }elseif(++$progress >= $this->count){
+            $this->setProgress($player, $this->count);
             $player->sendMessage(Quests::PREFIX . "메시지 [ {$message} ] 전송하기 미션을 클리어 했습니다");
             $this->getQuest()?->clearCheck($player);
             return; // 미션 클리어
