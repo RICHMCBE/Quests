@@ -73,7 +73,7 @@ class BreakBlockMission extends Mission{
         }
         $progress++;
         $this->setProgress($player, $progress);
-        $player->sendMessage(Quests::PREFIX . "블럭 [ {$block->getName()} ] 부수기 미션 진행 중.. ({$progress}/{$this->count})");
+        $player->sendTip(Quests::PREFIX . "블럭 [ {$block->getName()} ] 부수기 미션 진행 중..\n ({$progress}/{$this->count})");
         if($progress >= $this->count){
             $player->sendMessage(Quests::PREFIX . "블럭 [ {$block->getName()} ] 부수기 미션을 클리어 했습니다");
             $this->getQuest()?->clearCheck($player);

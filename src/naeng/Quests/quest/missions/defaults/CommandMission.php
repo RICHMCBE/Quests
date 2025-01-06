@@ -64,7 +64,7 @@ class CommandMission extends Mission{
         }
         $progress ++;
         $this->setProgress($player, $progress);
-        $player->sendMessage(Quests::PREFIX . "명령어 [ {$command} ] 입력하기 미션 진행 중.. ({$progress}/{$this->count})");
+        $player->sendTip(Quests::PREFIX . "명령어 [ {$command} ] 입력하기 미션 진행 중..\n ({$progress}/{$this->count})");
         if($progress >= $this->count){
             $player->sendMessage(Quests::PREFIX . "명령어 [ {$command} ] 입력하기 미션을 클리어 했습니다");
             $this->getQuest()?->clearCheck($player);

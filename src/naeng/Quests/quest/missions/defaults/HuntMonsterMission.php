@@ -56,7 +56,7 @@ class HuntMonsterMission extends Mission{
         }
 
         $this->setProgress($player, ++$progress);
-        $player->sendMessage(Quests::PREFIX . self::NAME . " 미션 진행 중.. ({$progress}/{$this->count})");
+        $player->sendTip(Quests::PREFIX . self::NAME . " 미션 진행 중..\n ({$progress}/{$this->count})");
     }
 
     public function jsonSerialize() : array{
