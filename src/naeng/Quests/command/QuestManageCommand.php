@@ -194,6 +194,22 @@ class QuestManageCommand extends Command{
                                             $player->sendForm($form);
                                         }
                                     );
+                                    $form->addButton(
+                                        name: ["몬스터 사냥하기", "몬스터를 사냥하는 미션 입니다"],
+                                        closure: function(Player $player) use($quest) : void{
+                                            $form = new CustomForm(function(Player $player, $data) use($quest){
+                                                if($data === null){
+                                                    return;
+                                                }
+                                                $count = intval($data[0] ?? 1);
+                                                $quest->addMission(new HuntMonsterMission($count));
+                                                $player->sendMessage(Quests::PREFIX . "몬스터 사냥하기 미션을 추가 했습니다");
+                                            });
+                                            $form->setTitle("몬스터 사냥하기 미션 추가");
+                                            $form->addInput("몇 번 사냥 해야하나요?");
+                                            $player->sendForm($form);
+                                        }
+                                    );
                                     $player->sendForm($form);
                                 }
                             );
