@@ -51,11 +51,13 @@ class HuntMonsterMission extends Mission{
 
         if($progress === null){
             return; // 미션과 관련 없는 플레이어
-        }elseif($progress >= $this->count){
-            return; // 이미 클리어한 미션
-        }
+        }elseif(++$progress >= $this->count){
+            $player->sendMessage(Quests::PREFIX . $this->getInformation() . " 미션을 클리어 했습니다");
+            $this->getQuest()?->clearCheck($player);
+            return;
+        } // 미션 클리어
 
-        $this->setProgress($player, ++$progress);
+        $this->setProgress($player, $progress);
         $player->sendTip(Quests::PREFIX . self::NAME . " 미션 진행 중..\n ({$progress}/{$this->count})");
     }
 

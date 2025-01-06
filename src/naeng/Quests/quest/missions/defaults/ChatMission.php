@@ -55,16 +55,13 @@ class ChatMission extends Mission{
         $progress = $this->getProgress($player);
         if($progress === null){
             return; // 미션과 관련 없는 플레이어
-        }elseif($progress >= $this->count){
-            return; // 이미 클리어한 미션
-        }
-        $progress ++;
-        $this->setProgress($player, $progress);
-        $player->sendMessage(Quests::PREFIX . "메시지 [ {$message} ] 전송하기 미션 진행 중.. ({$progress}/{$this->count})");
-        if($progress >= $this->count){
+        }elseif(++$progress >= $this->count){
             $player->sendMessage(Quests::PREFIX . "메시지 [ {$message} ] 전송하기 미션을 클리어 했습니다");
             $this->getQuest()?->clearCheck($player);
+            return; // 미션 클리어
         }
+        $this->setProgress($player, $progress);
+        $player->sendMessage(Quests::PREFIX . "메시지 [ {$message} ] 전송하기 미션 진행 중.. ({$progress}/{$this->count})");
     }
 
     public function jsonSerialize() : array{
