@@ -8,6 +8,7 @@ use naeng\Quests\quest\missions\defaults\BreakBlockMission;
 use naeng\Quests\quest\missions\defaults\BringItemMission;
 use naeng\Quests\quest\missions\defaults\ChatMission;
 use naeng\Quests\quest\missions\defaults\CommandMission;
+use naeng\Quests\quest\missions\defaults\HuntMonsterMission;
 use naeng\Quests\quest\Quest;
 use naeng\Quests\quest\QuestFactory;
 use naeng\Quests\Quests;
