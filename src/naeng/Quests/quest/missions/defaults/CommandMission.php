@@ -53,7 +53,7 @@ class CommandMission extends Mission{
             return; // 미션과 관련 없는 명령어
         }
         $player = $event->getSender();
-        if($player instanceof Player){
+        if(!($player instanceof Player)){
             return; // ConsoleCommandSender
         }
         $progress = $this->getProgress($player);
