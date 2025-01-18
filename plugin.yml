@@ -1,7 +1,7 @@
 name: Quests
 author: naeng
 main: naeng\Quests\Quests
-version: 1.0.6
+version: 1.0.7
 api: 5.0.0
 depend:
   - NaengUtils
