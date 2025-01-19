@@ -78,6 +78,8 @@ class Quest{
     }
 
     public function addMission(Mission $mission) : void{
+        $mission->setQuest($this);
+
         $this->missions[] = $mission;
         $this->refreshMissionData();
     }
@@ -127,6 +129,7 @@ class Quest{
     }
 
     public function clearCheck(Player|string $player) : void{
+        var_dump($this->isCleared($player));
         if(!$this->isCleared($player)){
             return;
         }

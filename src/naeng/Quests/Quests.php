@@ -20,7 +20,7 @@ class Quests extends PluginBase implements Listener{
 
     use SingletonTrait;
 
-    public const PREFIX = "§a§l[알림] §r§7";
+    public const PREFIX = '§l§6 • §r§7';
     private readonly QuestFactory $questFactory;
 
     /**

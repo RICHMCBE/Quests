@@ -50,7 +50,6 @@ class QuestManageCommand extends Command{
                     }
                     $name = $data[0];
                     $type = $data[1];
-                    var_dump($type);
                     $quest = new Quest($name, $type);
                     if(!$this->questFactory->addQuest($quest)){
                         $player->sendMessage(Quests::PREFIX  . "같은 이름의 퀘스트가 이미 존재 합니다: {$name}");
