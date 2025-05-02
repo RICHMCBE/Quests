@@ -1,10 +1,10 @@
 <?php
 
-namespace naeng\Quests\quest\missions\defaults;
+namespace naeng\quests\quest\missions\defaults;
 
-use naeng\Quests\quest\missions\Mission;
-use naeng\Quests\quest\Quest;
-use naeng\Quests\Quests;
+use naeng\quests\quest\missions\Mission;
+use naeng\quests\quest\Quest;
+use naeng\quests\Quests;
 use pocketmine\event\entity\EntityDeathEvent;
 use pocketmine\player\Player;
 use RoMo\MonsterPlugin\entity\MonsterEntity;
