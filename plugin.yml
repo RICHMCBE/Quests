@@ -1,7 +1,7 @@
 name: Quests
 author: naeng
 main: naeng\quests\Quests
-version: 1.0.9
+version: 1.0.10
 api: 5.0.0
 depend:
   - MonsterPlugin
