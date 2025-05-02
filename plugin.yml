@@ -1,9 +1,10 @@
 name: Quests
 author: naeng
-main: naeng\Quests\Quests
+main: naeng\quests\Quests
 version: 1.0.8
 api: 5.0.0
 depend:
+  - MonsterPlugin
   - XuidCore
   - NaengUtils
   - MailCore
