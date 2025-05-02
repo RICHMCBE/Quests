@@ -4,6 +4,7 @@ main: naeng\Quests\Quests
 version: 1.0.8
 api: 5.0.0
 depend:
+  - XuidCore
   - NaengUtils
   - MailCore
 virions:
