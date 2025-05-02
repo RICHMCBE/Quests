@@ -35,10 +35,12 @@ class QuestManageCommand extends Command{
             $sender->sendMessage(Quests::PREFIX . "게임에 접속하여 실행 해주세요");
             return;
         }
+
         if(!$this->testPermission($sender)){
             $sender->sendMessage(Quests::PREFIX . "명령어를 사용할 권한이 없습니다");
             return;
         }
+
         $form = new ButtonForm();
         $form->setTitle("퀘스트 관리");
         $form->addButton(
@@ -48,15 +50,19 @@ class QuestManageCommand extends Command{
                     if($data === null){
                         return;
                     }
+
                     $name = $data[0];
                     $type = $data[1];
                     $quest = new Quest($name, $type);
+
                     if(!$this->questFactory->addQuest($quest)){
                         $player->sendMessage(Quests::PREFIX  . "같은 이름의 퀘스트가 이미 존재 합니다: {$name}");
                         return;
                     }
+
                     $player->sendMessage(Quests::PREFIX . "퀘스트를 생성 했습니다: {$name}");
                 });
+
                 $form->setTitle("퀘스트 생성하기");
                 $form->addInput("\n퀘스트의 이름을 무엇으로 설정하시겠습니까?");
                 $form->addDropdown("퀘스트의 타입을 선택 해주세요", ["일일 퀘스트", "일반 퀘스트"]);
@@ -64,11 +70,13 @@ class QuestManageCommand extends Command{
                 $player->sendForm($form);
             }
         );
+
         $form->addButton(
             name: ["퀘스트 수정하기", "퀘스트 정보를 수정합니다"],
             closure: function(Player $player) : void{
                 $form = new ButtonForm();
                 $form->setTitle("퀘스트 수정하기");
+
                 foreach($this->questFactory->getQuests() as $quest){
                     $form->addButton(
                         name: [$quest->getName(), ($quest->getType() === Quest::TYPE_DAILY ? "일일 퀘스트" : "일반 퀘스트")],
@@ -81,6 +89,7 @@ class QuestManageCommand extends Command{
                                     $player->sendMessage(Quests::PREFIX . ($this->questFactory->removeQuest($quest) ? "퀘스트를 삭제 했습니다" : "퀘스트를 삭제할 수 없습니다"));
                                 }
                             );
+
                             $form->addButton(
                                 name: ["아이템 보상 변경하기", "아이템 보상을 변경합니다"],
                                 closure: function(Player $player) use($quest) : void{
@@ -93,6 +102,7 @@ class QuestManageCommand extends Command{
                                     $menu->send($player, "보상 아이템을 넣어주세요!");
                                 }
                             );
+
                             $form->addButton(
                                 name: ["섬 진척도 보상 변경하기", "섬 진척도 보상을 변경합니다"],
                                 closure: function(Player $player) use($quest) : void{
@@ -109,6 +119,7 @@ class QuestManageCommand extends Command{
                                     $player->sendForm($form);
                                 }
                             );
+
                             $form->addButton(
                                 name: ["미션 추가하기", "새로운 미션을 추가합니다"],
                                 closure: function(Player $player) use($quest) : void{
@@ -134,6 +145,7 @@ class QuestManageCommand extends Command{
                                             $player->sendForm($form);
                                         }
                                     );
+
                                     $form->addButton(
                                         name: ["아이템 가져오기", "엔티티에게 아이템을 가져오는 미션 입니다"],
                                         closure: function(Player $player) use($quest) : void{
@@ -158,6 +170,7 @@ class QuestManageCommand extends Command{
                                             $player->sendForm($form);
                                         }
                                     );
+
                                     $form->addButton(
                                         name: ["채팅 전송하기", "채팅을 전송하는 미션 입니다"],
                                         closure: function(Player $player) use($quest) : void{
@@ -176,6 +189,7 @@ class QuestManageCommand extends Command{
                                             $player->sendForm($form);
                                         }
                                     );
+
                                     $form->addButton(
                                         name: ["명령어 입력하기", "명령어를 입력하는 미션 입니다"],
                                         closure: function(Player $player) use($quest) : void{
@@ -194,6 +208,7 @@ class QuestManageCommand extends Command{
                                             $player->sendForm($form);
                                         }
                                     );
+
                                     $form->addButton(
                                         name: ["몬스터 사냥하기", "몬스터를 사냥하는 미션 입니다"],
                                         closure: function(Player $player) use($quest) : void{
@@ -213,6 +228,7 @@ class QuestManageCommand extends Command{
                                     $player->sendForm($form);
                                 }
                             );
+
                             $form->addButton(
                                 name: ["미션 삭제하기", "미션을 삭제합니다"],
                                 closure: function(Player $player) use($quest) : void{
@@ -230,6 +246,7 @@ class QuestManageCommand extends Command{
                                     $player->sendForm($form);
                                 }
                             );
+
                             $player->sendForm($form);
                         }
                     );
@@ -237,6 +254,7 @@ class QuestManageCommand extends Command{
                 $player->sendForm($form);
             }
         );
+
         $sender->sendForm($form);
     }
 

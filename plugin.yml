@@ -10,6 +10,7 @@ depend:
   - MailCore
 virions:
   - SOF3/await-generator/master
+  - jojoe77777/FormAPI/2.1.1
   - presentkim-pm/item-serialize-utils/3.1.0
 permissions:
   quests.staff.command:
