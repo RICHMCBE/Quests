@@ -2,6 +2,7 @@
 
 namespace naeng\quests\quest;
 
+use kim\present\utils\itemserialize\SnbtItemSerializer;
 use naeng\MailCore\data\MailInfo;
 use naeng\MailCore\MailCore;
 use naeng\quests\quest\missions\defaults\BreakBlockMission;
@@ -11,7 +12,6 @@ use naeng\quests\quest\missions\defaults\CommandMission;
 use naeng\quests\quest\missions\defaults\HuntMonsterMission;
 use naeng\quests\quest\missions\Mission;
 use naeng\quests\Quests;
-use NaengUtils\NaengUtils;
 use pocketmine\item\Item;
 use pocketmine\player\Player;
 use pocketmine\Server;
@@ -41,11 +41,13 @@ class Quest{
 
     public function refreshMissionData() : void{
         $players = [];
+
         foreach($this->missions as $mission){
             foreach($mission->getPlayerData() as $name => $data){
                 $players[$name] = true;
             }
         }
+
         foreach($this->missions as $mission){
             foreach($players as $name => $_){
                 if(!$mission->isDataExist($name)){
@@ -105,6 +107,7 @@ class Quest{
                 unset($this->missions[$key]);
             }
         }
+
         $this->refreshMissionData();
     }
 
@@ -122,13 +125,13 @@ class Quest{
 
     public function reset() : void{
         $this->clearedPlayers = [];
+
         foreach($this->missions as $mission){
             $mission->reset();
         }
     }
 
     public function clearCheck(Player|string $player) : void{
-        var_dump($this->isCleared($player));
         if(!$this->isCleared($player)){
             return;
         }
@@ -189,11 +192,13 @@ class Quest{
         if(in_array(strtolower($player instanceof Player ? $player->getName() : $player), $this->clearedPlayers)){
             return true;
         }
+
         foreach($this->missions as $mission){
             if(!$mission->isCleared($player)){
                 return false;
             }
         }
+
         return true;
     }
 
@@ -211,15 +216,12 @@ class Quest{
         foreach($this->missions as $mission){
             $missions[] = $mission->jsonSerialize();
         }
-        $rewardItems = [];
-        foreach($this->rewardItems as $item){
-            $rewardItems[] = NaengUtils::itemStringSerialize($item);
-        }
+
         return [
             "name"                 => $this->name,
             "type"                 => $this->type,
             "missions"             => $missions,
-            "rewardItems"          => $rewardItems,
+            "rewardItems"          => SnbtItemSerializer::serializeList($this->rewardItems),
             "rewardIslandProgress" => $this->rewardIslandProgress,
             "clearedPlayers"       => $this->clearedPlayers
         ];
@@ -246,16 +248,15 @@ class Quest{
                     break;
             }
         }
-        $rewardItems = [];
-        foreach($jsonSerializedData["rewardItems"] as $stringSerializedItem){
-            $rewardItems[] = NaengUtils::itemStringDeserialize($stringSerializedItem);
-        }
+
         $jsonSerializedData["missions"] = $missions;
-        $jsonSerializedData["rewardItems"] = $rewardItems;
+        $jsonSerializedData["rewardItems"] = SnbtItemSerializer::deserializeList($jsonSerializedData["rewardItems"]);
+
         $quest = new self(...$jsonSerializedData);
         foreach($quest->getMissions() as $mission){
             $mission->setQuest($quest);
         }
+
         return $quest;
     }
 

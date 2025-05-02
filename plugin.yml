@@ -10,6 +10,7 @@ depend:
   - MailCore
 virions:
   - SOF3/await-generator/master
+  - presentkim-pm/item-serialize-utils/3.1.0
 permissions:
   quests.staff.command:
     description: "퀘스트를 관리하기 위한 권한입니다"

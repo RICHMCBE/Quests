@@ -2,6 +2,7 @@
 
 namespace naeng\quests\quest\missions\defaults;
 
+use kim\present\utils\itemserialize\SnbtItemSerializer;
 use naeng\quests\quest\missions\Mission;
 use naeng\quests\quest\Quest;
 use naeng\quests\Quests;
@@ -22,9 +23,11 @@ class BringItemMission extends Mission{
     public function currentProgress(Player|string $player): string{
         $progress = $this->getProgress($player);
         $currentProgress = explode("\n", $this->nameTag)[0] . "에게 아이템 [ " . NaengUtils::getKoreanName($this->item, $this->item->getName()) . " ] {$this->item->getCount()}개 가져오기";
+
         if($progress !== null){
             $currentProgress .= " (" . ($progress ? "클리어" : "도전 중") . ")";
         }
+
         return $currentProgress;
     }
 
@@ -48,24 +51,31 @@ class BringItemMission extends Mission{
         if($event->getEntity()->getNameTag() !== $this->nameTag){
             return; // 네임태그가 다름
         }
+
         $damager = $event->getDamager();
         if(!$damager instanceof Player){
             return;
         }
+
         $progress = $this->getProgress($damager);
+
         if($progress === null){
             return; // 해당 미션과 관련 없는 플레이어
         }elseif($progress === true){
             return; // 이미 클리어한 미션
         }
+
         $inventory = $damager->getInventory();
         $item = $this->getItem();
         if(!$inventory->contains($item)){
             return; // 아이템을 소지하고 있지 않음
         }
+
         $inventory->removeItem($item);
+
         $this->setProgress($damager, true);
         $damager->sendMessage(Quests::PREFIX . "아이템 [ " . NaengUtils::getKoreanName($item, $item->getName()) . " ] 가져오기 미션을 클리어 했습니다");
+
         $this->getQuest()?->clearCheck($damager);
     }
 
@@ -74,13 +84,13 @@ class BringItemMission extends Mission{
             "name"       => self::NAME,
             "playerData" => $this->playerData,
             "nameTag"    => $this->nameTag,
-            "item"       => NaengUtils::itemStringSerialize($this->item)
+            "item"       => SnbtItemSerializer::serialize($this->item)
         ];
     }
 
     public static function jsonDeserialize(array $jsonSerializedMission) : self{
         unset($jsonSerializedMission["name"]);
-        $jsonSerializedMission["item"] = NaengUtils::itemStringDeserialize($jsonSerializedMission["item"]);
+        $jsonSerializedMission["item"] = SnbtItemSerializer::deserialize($jsonSerializedMission["item"]);
         return new self(...$jsonSerializedMission);
     }
 
@@ -88,9 +98,11 @@ class BringItemMission extends Mission{
         if(!parent::equals($mission)){
             return false;
         }
+
         if(!$mission instanceof BringItemMission){
             return false;
         }
+
         return $this->nameTag === $mission->getNameTag() && $this->item->equalsExact($mission->getItem());
     }
 

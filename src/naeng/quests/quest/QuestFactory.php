@@ -2,7 +2,6 @@
 
 namespace naeng\quests\quest;
 
-use naeng\Cook\Cook;
 use naeng\quests\Quests;
 use pocketmine\player\Player;
 use Symfony\Component\Filesystem\Path;
