@@ -91,4 +91,11 @@ class QuestFactory{
         return $quests;
     }
 
+    /**
+     * @return Quest[]
+     */
+    public function getGuideQuests() : array{
+        return $this->getQuestsByType(Quest::TYPE_GUIDE);
+    }
+
 }
