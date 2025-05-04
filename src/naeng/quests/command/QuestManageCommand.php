@@ -65,8 +65,7 @@ class QuestManageCommand extends Command{
 
                 $form->setTitle("퀘스트 생성하기");
                 $form->addInput("\n퀘스트의 이름을 무엇으로 설정하시겠습니까?");
-                $form->addDropdown("퀘스트의 타입을 선택 해주세요", ["일일 퀘스트", "일반 퀘스트"]);
-                $form->addLabel("\n* 보상 추가 및 미션 추가는 '퀘스트 수정하기' 옵션에서 가능 합니다");
+                $form->addDropdown("퀘스트의 타입을 선택 해주세요", ["일일 퀘스트", "일반 퀘스트", "길라잡이 퀘스트"]);
                 $player->sendForm($form);
             }
         );
@@ -78,8 +77,15 @@ class QuestManageCommand extends Command{
                 $form->setTitle("퀘스트 수정하기");
 
                 foreach($this->questFactory->getQuests() as $quest){
+
+                    $typeText = match($quest->getType()) {
+                        Quest::TYPE_DAILY => "일일 퀘스트",
+                        Quest::TYPE_GUIDE => "길라잡이 퀘스트",
+                        default => "일반 퀘스트"
+                    };
+
                     $form->addButton(
-                        name: [$quest->getName(), ($quest->getType() === Quest::TYPE_DAILY ? "일일 퀘스트" : "일반 퀘스트")],
+                        name: [$quest->getName(), $typeText],
                         closure: function(Player $player) use($quest) : void{
                             $form = new ButtonForm();
                             $form->setTitle($quest->getName());
@@ -122,17 +128,17 @@ class QuestManageCommand extends Command{
 
                             $form->addButton(
                                 name: ["미션 추가하기", "새로운 미션을 추가합니다"],
-                                closure: function(Player $player) use($quest) : void{
+                                closure: function(Player $player) use($quest) : void {
                                     $form = new ButtonForm();
                                     $form->addButton(
                                         name: ["블럭 부수기", "블럭을 부수는 미션 입니다"],
-                                        closure: function(Player $player) use($quest) : void{
-                                            $form = new CustomForm(function(Player $player, $data) use($quest){
-                                                if($data === null){
+                                        closure: function (Player $player) use ($quest): void {
+                                            $form = new CustomForm(function (Player $player, $data) use ($quest) {
+                                                if ($data === null) {
                                                     return;
                                                 }
                                                 $count = intval($data[0] ?? 1);
-                                                Quests::$blockBreakEventQueue[$player->getName()] = function(BlockBreakEvent $event) use($count, $quest) : void{
+                                                Quests::$blockBreakEventQueue[$player->getName()] = function (BlockBreakEvent $event) use ($count, $quest): void {
                                                     $player = $event->getPlayer();
                                                     $block = $event->getBlock();
                                                     $quest->addMission(new BreakBlockMission($block->getName(), $block->getStateId(), $count));
@@ -148,16 +154,16 @@ class QuestManageCommand extends Command{
 
                                     $form->addButton(
                                         name: ["아이템 가져오기", "엔티티에게 아이템을 가져오는 미션 입니다"],
-                                        closure: function(Player $player) use($quest) : void{
-                                            $form = new CustomForm(function(Player $player, $data) use($quest){
-                                                if($data === null){
+                                        closure: function (Player $player) use ($quest): void {
+                                            $form = new CustomForm(function (Player $player, $data) use ($quest) {
+                                                if ($data === null) {
                                                     return;
                                                 }
                                                 $count = intval($data[0] ?? 1);
                                                 $item = (clone $player->getInventory()->getItemInHand())->setCount($count);
-                                                Quests::$entityDamageByEntityEventQueue[$player->getName()] = function(EntityDamageByEntityEvent $event) use($count, $item, $quest) : void{
+                                                Quests::$entityDamageByEntityEventQueue[$player->getName()] = function (EntityDamageByEntityEvent $event) use ($count, $item, $quest): void {
                                                     $player = $event->getDamager();
-                                                    if(!$player instanceof Player){
+                                                    if (!$player instanceof Player) {
                                                         return;
                                                     }
                                                     $quest->addMission(new BringItemMission($event->getEntity()->getNameTag(), $item));
@@ -173,9 +179,9 @@ class QuestManageCommand extends Command{
 
                                     $form->addButton(
                                         name: ["채팅 전송하기", "채팅을 전송하는 미션 입니다"],
-                                        closure: function(Player $player) use($quest) : void{
-                                            $form = new CustomForm(function(Player $player, $data) use($quest){
-                                                if($data === null){
+                                        closure: function (Player $player) use ($quest): void {
+                                            $form = new CustomForm(function (Player $player, $data) use ($quest) {
+                                                if ($data === null) {
                                                     return;
                                                 }
                                                 $message = $data[0] ?? '';
@@ -192,9 +198,9 @@ class QuestManageCommand extends Command{
 
                                     $form->addButton(
                                         name: ["명령어 입력하기", "명령어를 입력하는 미션 입니다"],
-                                        closure: function(Player $player) use($quest) : void{
-                                            $form = new CustomForm(function(Player $player, $data) use($quest){
-                                                if($data === null){
+                                        closure: function (Player $player) use ($quest): void {
+                                            $form = new CustomForm(function (Player $player, $data) use ($quest) {
+                                                if ($data === null) {
                                                     return;
                                                 }
                                                 $command = $data[0] ?? '';
@@ -209,15 +215,16 @@ class QuestManageCommand extends Command{
                                         }
                                     );
 
+
                                     $form->addButton(
                                         name: ["몬스터 사냥하기", "몬스터를 사냥하는 미션 입니다"],
-                                        closure: function(Player $player) use($quest) : void{
+                                       closure: function(Player $player) use($quest) : void{
                                             $form = new CustomForm(function(Player $player, $data) use($quest){
                                                 if($data === null){
-                                                    return;
-                                                }
-                                                $count = intval($data[0] ?? 1);
-                                                $quest->addMission(new HuntMonsterMission($count));
+                                                   return;
+                                               }
+                                               $count = intval($data[0] ?? 1);
+                                               $quest->addMission(new HuntMonsterMission($count));
                                                 $player->sendMessage(Quests::PREFIX . "몬스터 사냥하기 미션을 추가 했습니다");
                                             });
                                             $form->setTitle("몬스터 사냥하기 미션 추가");
