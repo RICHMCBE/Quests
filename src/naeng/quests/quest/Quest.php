@@ -22,6 +22,7 @@ class Quest{
 
     public const TYPE_DAILY  = 0;
     public const TYPE_NORMAL = 1;
+    public const TYPE_GUIDE = 2;
 
     /**
      * @param Mission[] $missions
