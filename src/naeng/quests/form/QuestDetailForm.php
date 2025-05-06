@@ -37,8 +37,8 @@ class QuestDetailForm implements Form {
                 "type" => "modal",
                 "title" => "퀘스트: " . $this->quest->getName(),
                 "content" => implode("\n", $content),
-                "button1" => "퀘스트 목록으로 돌아가기..",
-                "button2" => "퀘스트 포기하기.."
+                "button1" => "퀘스트 포기하기",
+                "button2" => "퀘스트 목록으로 돌아가기"
             ];
         } else {
             $content[] = "§6● §f§l수행 해야하는 미션";
