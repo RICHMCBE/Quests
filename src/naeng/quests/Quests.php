@@ -103,12 +103,21 @@ class Quests extends PluginBase implements Listener{
         }
     }
 
+    /**
+     * @prioirty MONITOR
+     * @ignoreCancelled true
+     */
     public function handleEntityDamageByEntityEvent(EntityDamageByEntityEvent $event) : void{
         $damagerName = $event->getDamager()->getName();
         if(isset(self::$entityDamageByEntityEventQueue[$damagerName])){
             (self::$entityDamageByEntityEventQueue[$damagerName])($event);
             unset(self::$entityDamageByEntityEventQueue[$damagerName]);
         }
+
+        if($event->isCancelled()){
+            return;
+        }
+
         foreach($this->questFactory->getQuests() as $quest){
             foreach($quest->getMissions() as $mission){
                 $mission->handleEntityDamageByEntityEvent($event);
