@@ -2,7 +2,6 @@
 
 namespace naeng\quests\quest;
 
-use kim\present\utils\itemserialize\SnbtItemSerializer;
 use naeng\MailCore\data\MailInfo;
 use naeng\MailCore\MailCore;
 use naeng\quests\quest\missions\defaults\BreakBlockMission;
@@ -12,6 +11,7 @@ use naeng\quests\quest\missions\defaults\CommandMission;
 use naeng\quests\quest\missions\defaults\HuntMonsterMission;
 use naeng\quests\quest\missions\Mission;
 use naeng\quests\Quests;
+use naeng\quests\utils\ItemUtils;
 use pocketmine\item\Item;
 use pocketmine\player\Player;
 use pocketmine\Server;
@@ -222,7 +222,7 @@ class Quest{
             "name"                 => $this->name,
             "type"                 => $this->type,
             "missions"             => $missions,
-            "rewardItems"          => SnbtItemSerializer::serializeList($this->rewardItems),
+            "rewardItems"          => ItemUtils::serializeList($this->rewardItems),
             "rewardIslandProgress" => $this->rewardIslandProgress,
             "clearedPlayers"       => $this->clearedPlayers
         ];
@@ -251,7 +251,7 @@ class Quest{
         }
 
         $jsonSerializedData["missions"] = $missions;
-        $jsonSerializedData["rewardItems"] = SnbtItemSerializer::deserializeList($jsonSerializedData["rewardItems"]);
+        $jsonSerializedData["rewardItems"] = ItemUtils::deserializeList($jsonSerializedData["rewardItems"]);
 
         $quest = new self(...$jsonSerializedData);
         foreach($quest->getMissions() as $mission){

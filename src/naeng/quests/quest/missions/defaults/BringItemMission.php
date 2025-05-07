@@ -2,10 +2,10 @@
 
 namespace naeng\quests\quest\missions\defaults;
 
-use kim\present\utils\itemserialize\SnbtItemSerializer;
 use naeng\quests\quest\missions\Mission;
 use naeng\quests\quest\Quest;
 use naeng\quests\Quests;
+use naeng\quests\utils\ItemUtils;
 use NaengUtils\NaengUtils;
 use pocketmine\event\entity\EntityDamageByEntityEvent;
 use pocketmine\item\Item;
@@ -84,13 +84,13 @@ class BringItemMission extends Mission{
             "name"       => self::NAME,
             "playerData" => $this->playerData,
             "nameTag"    => $this->nameTag,
-            "item"       => SnbtItemSerializer::serialize($this->item)
+            "item"       => ItemUtils::serialize($this->item)
         ];
     }
 
     public static function jsonDeserialize(array $jsonSerializedMission) : self{
         unset($jsonSerializedMission["name"]);
-        $jsonSerializedMission["item"] = SnbtItemSerializer::deserialize($jsonSerializedMission["item"]);
+        $jsonSerializedMission["item"] = ItemUtils::deserialize($jsonSerializedMission["item"]);
         return new self(...$jsonSerializedMission);
     }
 
