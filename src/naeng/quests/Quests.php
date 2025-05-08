@@ -47,10 +47,14 @@ class Quests extends PluginBase implements Listener{
         if(!InvMenuHandler::isRegistered()){
             InvMenuHandler::register($this);
         }
+
+        // 초기 체크
         $this->checkDate();
-        $this->getScheduler()->scheduleDelayedTask(new ClosureTask(function() : void{
+
+        // 5분마다 checkDate() 실행하는 반복 태스크 등록
+        $this->getScheduler()->scheduleRepeatingTask(new ClosureTask(function() : void{
             $this->checkDate();
-        }), (strtotime('tomorrow') - time()) * 20);
+        }), 20 * 60 * 5); // 20틱 * 60초 * 5분 = 5분마다
     }
 
     public function checkDate() : void{
@@ -65,6 +69,8 @@ class Quests extends PluginBase implements Listener{
             $quest->reset();
         }
     }
+
+
 
     public function onDisable() : void{
         $this->questFactory->save();
