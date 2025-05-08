@@ -1,9 +1,8 @@
 name: Quests
 author: naeng
 main: naeng\quests\Quests
-version: 1.2.0
+version: 1.1.11
 api: 5.0.0
-load: POSTWORLD
 depend:
   - XuidCore
   - NaengUtils
