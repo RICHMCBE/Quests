@@ -2,7 +2,7 @@
 
 namespace naeng\quests\utils;
 
-use naeng\goodies\libs\kim\present\utils\itemserialize\SnbtItemSerializer;
+use kim\present\utils\itemserialize\SnbtItemSerializer;
 use pocketmine\item\Item;
 use pocketmine\item\VanillaItems;
 
