@@ -20,7 +20,7 @@ class QuestTypeForm implements Form {
         $buttons = [];
         foreach($this->quests as $quest) {
             $buttons[] = [
-                "text" => "§r§l" . $quest->getName() . "\n§r§8" .
+                "text" => "§r§l" . $quest->getDisplayName() . "\n§r§8" .
                     $this->command->getStatusMessage($quest, $this->player)
             ];
         }
