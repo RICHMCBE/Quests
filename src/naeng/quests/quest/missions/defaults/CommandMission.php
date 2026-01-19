@@ -2,92 +2,105 @@
 
 namespace naeng\quests\quest\missions\defaults;
 
+use naeng\quests\info\QuestInfoIntegration;
 use naeng\quests\quest\missions\Mission;
-use naeng\quests\quest\Quest;
-use naeng\quests\Quests;
 use pocketmine\event\server\CommandEvent;
 use pocketmine\player\Player;
 
 class CommandMission extends Mission{
 
-    public const NAME = "명령어 실행하기";
-    public const DEFAULT_PROGRESS = 0;
+    public const NAME = "명령어 사용하기";
 
-    public function __construct(protected readonly string $command, protected readonly int $count, array $playerData = [], ?Quest $quest = null){
-        parent::__construct($playerData, $quest);
+    public function __construct(
+        private readonly string $command,
+        private readonly string $displayName
+    ){
     }
 
-    public function currentProgress(Player|string $player): string{
-        $progress = $this->getProgress($player);
-        $currentProgress = "명령어 [ {$this->command} ] 입력하기";
-        if($progress !== null){
-            $currentProgress .= " ({$progress}/{$this->count})";
-        }
-        return $currentProgress;
-    }
-
-    public function getInformation() : string{
-        return "명령어 [ {$this->command} ] {$this->count}번 입력하기";
-    }
-
-    public function isCleared(Player|string $player) : bool{
-        return $this->getProgress($player, self::DEFAULT_PROGRESS) >= $this->count;
+    public function getName() : string{
+        return self::NAME;
     }
 
     public function getCommand() : string{
         return $this->command;
     }
 
-    public function getCount() : int{
-        return $this->count;
+    public function getDisplayName() : string{
+        return $this->displayName;
+    }
+
+    public function getInformation() : string{
+        return "/{$this->command} 명령어 사용하기";
+    }
+
+    public function currentProgress(Player|string $player) : string{
+        $cleared = $this->isCleared($player) ? "§a(완료)" : "§c(미완료)";
+        return "/{$this->command} 명령어 사용하기 {$cleared}";
+    }
+
+    public function isCleared(Player|string $player) : bool{
+        return ($this->getProgress($player) ?? 0) >= 1;
     }
 
     public function handleCommandEvent(CommandEvent $event) : void{
-        $command = $event->getCommand();
-        if($command !== $this->command){
-            return; // 미션과 관련 없는 명령어
-        }
-        $player = $event->getSender();
-        if(!($player instanceof Player)){
-            return; // ConsoleCommandSender
-        }
-        $progress = $this->getProgress($player);
-        if($progress === null){
-            return; // 해당 미션과 관련 없는 플레이어
-        }elseif($progress >= $this->count){
+        $sender = $event->getSender();
+        if(!$sender instanceof Player){
             return;
-        }elseif(++$progress == $this->count){
-            $this->setProgress($player, $progress);
-            $player->sendMessage(Quests::PREFIX . "명령어 [ {$command} ] 입력하기 미션을 클리어 했습니다");
-            $this->getQuest()?->clearCheck($player);
-            return; // 미션 클리어
         }
-        $this->setProgress($player, $progress);
-        $player->sendTip(Quests::PREFIX . "명령어 [ {$command} ] 입력하기 미션 진행 중..\n ({$progress}/{$this->count})");
+
+        $command = $event->getCommand();
+        // 명령어 파싱 (슬래시 제거 및 첫 번째 단어만 추출)
+        $command = ltrim($command, "/");
+        $commandParts = explode(" ", $command);
+        $baseCommand = strtolower($commandParts[0]);
+
+        // 대상 명령어와 일치하지 않으면 무시
+        if($baseCommand !== strtolower($this->command)){
+            return;
+        }
+
+        // 이미 완료했으면 스킵
+        if($this->isCleared($sender)){
+            return;
+        }
+
+        // 가이드 퀘스트는 자동 수락이므로, 진행 데이터가 없으면 생성
+        if(!$this->isTrying($sender)){
+            if($this->quest !== null && $this->quest->isAutoAccept() && !$this->quest->isCleared($sender)){
+                $this->setProgress($sender, self::DEFAULT_PROGRESS);
+            }else{
+                return;
+            }
+        }
+
+        // 명령어 사용 완료 처리
+        $this->setProgress($sender, 1);
+
+        // 완료 메시지 전송
+        if($this->quest !== null){
+            $sender->sendPopup("§a§l[미션 완료] §r§f{$this->displayName}");
+            $this->quest->clearCheck($sender);
+        }
+
+        // InfoPlugin 스코어보드 업데이트
+        QuestInfoIntegration::updateScoreboard($sender);
     }
 
     public function jsonSerialize() : array{
         return [
-            "name"       => self::NAME,
-            "playerData" => $this->playerData,
-            "command"    => $this->command,
-            "count"      => $this->count
+            "name" => self::NAME,
+            "command" => $this->command,
+            "displayName" => $this->displayName,
+            "playerData" => $this->playerData
         ];
     }
 
-    public static function jsonDeserialize(array $jsonSerializedMission) : self{
-        unset($jsonSerializedMission["name"]);
-        return new self(...$jsonSerializedMission);
+    public static function jsonDeserialize(array $data) : static{
+        $mission = new static(
+            $data["command"],
+            $data["displayName"]
+        );
+        $mission->setPlayerData($data["playerData"] ?? []);
+        return $mission;
     }
-
-    public function equals(Mission $mission) : bool{
-        if(!parent::equals($mission)){
-            return false;
-        }
-        if(!$mission instanceof CommandMission){
-            return false;
-        }
-        return $this->command === $mission->getCommand() && $this->count === $mission->getCount();
-    }
-
 }
