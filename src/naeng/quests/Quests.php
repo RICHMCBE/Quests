@@ -3,26 +3,27 @@
 namespace naeng\quests;
 
 use alvin0319\VotifierAPI\event\PlayerVoteEvent;
+use cosmicpe\npcdialogue\NpcDialogueManager;
 use Generator;
 use kim\present\sqlcore\SqlCore;
 use muqsit\invmenu\InvMenuHandler;
 use naeng\quests\command\QuestAdminCommand;
 use naeng\quests\command\QuestCommand;
 use naeng\quests\database\DatabaseManager;
-use naeng\quests\info\QuestInfoIntegration;
 use naeng\quests\quest\QuestFactory;
 use naeng\quests\utils\ItemUtils;
 use pocketmine\event\block\BlockBreakEvent;
 use pocketmine\event\Listener;
+use pocketmine\event\player\PlayerChatEvent;
 use pocketmine\event\player\PlayerJoinEvent;
 use pocketmine\event\player\PlayerQuitEvent;
 use pocketmine\event\server\CommandEvent;
+use pocketmine\player\Player;
 use pocketmine\plugin\PluginBase;
 use pocketmine\scheduler\ClosureTask;
 use pocketmine\utils\SingletonTrait;
 use poggit\libasynql\DataConnector;
 use poggit\libasynql\libasynql;
-use RoMo\InfoPlugin\InfoPlugin;
 use SOFe\AwaitGenerator\Await;
 
 class Quests extends PluginBase implements Listener{
@@ -74,11 +75,12 @@ class Quests extends PluginBase implements Listener{
             InvMenuHandler::register($this);
         }
 
-        // InfoPlugin 연동
-        if(class_exists(InfoPlugin::class)){
-            QuestInfoIntegration::register();
-            $this->getLogger()->info("InfoPlugin 연동 완료");
+        // NpcDialogue 등록
+        if(!NpcDialogueManager::isRegistered()){
+            NpcDialogueManager::register($this);
+            $this->getLogger()->info("NpcDialogue 연동 완료");
         }
+
 
         // 초기 날짜 체크
         $this->checkDate();
@@ -159,6 +161,7 @@ class Quests extends PluginBase implements Listener{
 
     /**
      * 플레이어 접속 시 클리어 데이터 로드
+     * @priority MONITOR
      */
     public function handlePlayerJoinEvent(PlayerJoinEvent $event) : void{
         $player = $event->getPlayer();
@@ -190,9 +193,13 @@ class Quests extends PluginBase implements Listener{
                 }
             }
 
-            // 데이터 로드 완료 후 스코어보드 업데이트
+            // 데이터 로드 완료 후 퀘스트 정보 표시 (타이틀)
             if($player->isOnline()){
-                QuestInfoIntegration::updateScoreboard($player);
+                $this->getScheduler()->scheduleDelayedTask(new ClosureTask(function() use($player) : void{
+                    if($player->isOnline()){
+                        $this->sendQuestNotification($player);
+                    }
+                }), 20);
             }
         });
     }
@@ -228,6 +235,21 @@ class Quests extends PluginBase implements Listener{
     }
 
     /**
+     * @priority MONITOR
+     */
+    public function handleChatEvent(PlayerChatEvent $event) : void{
+        if($event->isCancelled()){
+            return;
+        }
+
+        foreach($this->questFactory->getQuests() as $quest){
+            foreach($quest->getMissions() as $mission){
+                $mission->handleChatEvent($event);
+            }
+        }
+    }
+
+    /**
      * 마인리스트 추천 이벤트 핸들러
      * @priority MONITOR
      */
@@ -240,9 +262,58 @@ class Quests extends PluginBase implements Listener{
     }
 
     /**
-     * 플레이어 퇴장 시 캐시 정리
+     * 플레이어 퇴장 시 타이틀 제거
      */
     public function handlePlayerQuitEvent(PlayerQuitEvent $event) : void{
-        QuestInfoIntegration::onPlayerQuit($event->getPlayer());
+        $player = $event->getPlayer();
+        if($player->isOnline()){
+            $player->sendTitle("§A§D", "");
+        }
+    }
+
+    /**
+     * 가이드 퀘스트 알림을 화면 오른쪽에 표시
+     */
+    public function sendQuestNotification(Player $player) : void{
+        $quest = $this->questFactory->getCurrentGuideQuest($player);
+
+        // 모든 가이드 퀘스트 완료 시 타이틀 제거
+        if($quest === null){
+            $player->sendTitle("§A§D", "");
+            return;
+        }
+
+        // 퀘스트 정보 생성
+        $stage = $this->questFactory->getCurrentQuestStage($player);
+        $title = "§e§l{$stage}. {$quest->getDisplayName()}";
+
+        $titleLines = [];
+        $subtitleLines = [];
+        foreach($quest->getMissions() as $mission){
+            $isCleared = $mission->isCleared($player);
+            $progress = $mission->getProgress($player) ?? 0;
+            $info = $mission->getInformation();
+
+            // 타겟 수 가져오기
+            $target = 1;
+            if(method_exists($mission, 'getCount')){
+                $count = $mission->getCount();
+                if(is_int($count) && $count > 0){
+                    $target = $count;
+                }
+            }
+
+            $checkMark = $isCleared ? "§a✓" : "§7○";
+            $color = $isCleared ? "§a" : "§f";
+            $progressColor = $isCleared ? "§a" : "§7";
+
+            $titleLines[] = "{$checkMark} {$color}{$info}";
+            $subtitleLines[] = "{$progressColor}§l({$progress}/{$target})";
+        }
+
+        // 타이틀과 서브타이틀 전송
+        $message = $title . "\n" . implode("\n", $titleLines);
+        $subtitle = implode(" ", $subtitleLines);
+        $player->sendTitle("§A§C{$message}", "§A§D{$subtitle}");
     }
 }

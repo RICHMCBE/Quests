@@ -1,7 +1,7 @@
 name: Quests
 author: naeng
 main: naeng\quests\Quests
-version: 1.5.0
+version: 1.5.1
 api: 5.0.0
 depend:
   - XuidCore
@@ -11,7 +11,6 @@ depend:
 softdepend:
   - Customies
   - Warehouse
-  - InfoPlugin
 virions:
   - SOF3/await-generator/master
   - poggit/libasynql/4.0.0

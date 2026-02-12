@@ -3,15 +3,15 @@
 namespace naeng\quests\quest\missions\defaults;
 
 use naeng\quests\quest\missions\Mission;
-use pocketmine\event\server\CommandEvent;
+use pocketmine\event\player\PlayerChatEvent;
 use pocketmine\player\Player;
 
-class CommandMission extends Mission{
+class ChatMission extends Mission{
 
-    public const NAME = "명령어 사용하기";
+    public const NAME = "채팅하기";
 
     public function __construct(
-        private readonly string $command,
+        private readonly string $message,
         private readonly string $displayName
     ){
     }
@@ -20,8 +20,8 @@ class CommandMission extends Mission{
         return self::NAME;
     }
 
-    public function getCommand() : string{
-        return $this->command;
+    public function getMessage() : string{
+        return $this->message;
     }
 
     public function getDisplayName() : string{
@@ -29,32 +29,24 @@ class CommandMission extends Mission{
     }
 
     public function getInformation() : string{
-        return "/{$this->command} 명령어 사용하기";
+        return "{$this->message} 채팅으로 입력하기";
     }
 
     public function currentProgress(Player|string $player) : string{
         $cleared = $this->isCleared($player) ? "§a(완료)" : "§c(미완료)";
-        return "/{$this->command} 명령어 사용하기 {$cleared}";
+        return "{$this->message} 채팅으로 입력하기 {$cleared}";
     }
 
     public function isCleared(Player|string $player) : bool{
         return ($this->getProgress($player) ?? 0) >= 1;
     }
 
-    public function handleCommandEvent(CommandEvent $event) : void{
-        $sender = $event->getSender();
-        if(!$sender instanceof Player){
-            return;
-        }
+    public function handleChatEvent(PlayerChatEvent $event) : void{
+        $sender = $event->getPlayer();
+        $message = $event->getMessage();
 
-        $command = $event->getCommand();
-        // 명령어 파싱 (슬래시 제거 및 첫 번째 단어만 추출)
-        $command = ltrim($command, "/");
-        $commandParts = explode(" ", $command);
-        $baseCommand = strtolower($commandParts[0]);
-
-        // 대상 명령어와 일치하지 않으면 무시
-        if($baseCommand !== strtolower($this->command)){
+        // 대상 메시지와 일치하지 않으면 무시
+        if($message !== $this->message){
             return;
         }
 
@@ -72,7 +64,7 @@ class CommandMission extends Mission{
             }
         }
 
-        // 명령어 사용 완료 처리
+        // 채팅 완료 처리
         $this->setProgress($sender, 1);
 
         // 완료 메시지 전송
@@ -86,7 +78,7 @@ class CommandMission extends Mission{
     public function jsonSerialize() : array{
         return [
             "name" => self::NAME,
-            "command" => $this->command,
+            "message" => $this->message,
             "displayName" => $this->displayName,
             "playerData" => $this->playerData
         ];
@@ -94,7 +86,7 @@ class CommandMission extends Mission{
 
     public static function jsonDeserialize(array $data) : static{
         $mission = new static(
-            $data["command"],
+            $data["message"],
             $data["displayName"]
         );
         $mission->setPlayerData($data["playerData"] ?? []);

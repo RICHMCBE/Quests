@@ -3,9 +3,10 @@
 namespace naeng\quests\quest\missions;
 
 use alvin0319\VotifierAPI\event\PlayerVoteEvent;
-use naeng\quests\info\QuestInfoIntegration;
 use naeng\quests\quest\Quest;
+use naeng\quests\Quests;
 use pocketmine\event\block\BlockBreakEvent;
+use pocketmine\event\player\PlayerChatEvent;
 use pocketmine\event\server\CommandEvent;
 use pocketmine\player\Player;
 use pocketmine\Server;
@@ -63,16 +64,19 @@ abstract class Mission{
         $name = strtolower($player instanceof Player ? $player->getName() : $player);
         $this->playerData[$name] = $progress;
 
-        // DB에 저장
+        // DB에 비동기 저장 (메모리 상태가 우선, DB는 영속성 보장용)
         if($saveToDb && $this->quest !== null){
             $this->quest->saveProgressToDb($name, $this->index, (int)$progress);
         }
 
-        // 가이드 퀘스트인 경우 스코어보드 업데이트
+        // 가이드 퀘스트인 경우
         if($this->quest !== null && $this->quest->getType() === Quest::TYPE_GUIDE){
             $playerInstance = $player instanceof Player ? $player : Server::getInstance()->getPlayerExact($name);
-            if($playerInstance !== null){
-                QuestInfoIntegration::updateScoreboard($playerInstance);
+            if($playerInstance !== null && $playerInstance->isConnected()){
+                // 먼저 클리어 체크 (완료 시 캐시 업데이트)
+                $this->quest->clearCheck($playerInstance);
+                // 그 다음 화면 오른쪽에 타이틀 알림 전송
+                Quests::getInstance()->sendQuestNotification($playerInstance);
             }
         }
     }
@@ -99,6 +103,9 @@ abstract class Mission{
     }
 
     public function handleCommandEvent(CommandEvent $event) : void{
+    }
+
+    public function handleChatEvent(PlayerChatEvent $event) : void{
     }
 
     public function handleVoteEvent(PlayerVoteEvent $event) : void{

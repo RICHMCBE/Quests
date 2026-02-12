@@ -4,7 +4,6 @@ namespace naeng\quests\quest;
 
 use naeng\MailCore\data\MailInfo;
 use naeng\MailCore\MailCore;
-use naeng\quests\info\QuestInfoIntegration;
 use naeng\quests\quest\missions\Mission;
 use naeng\quests\Quests;
 use pocketmine\item\Item;
@@ -183,6 +182,7 @@ class Quest{
 
         // 메모리 캐시 업데이트
         $this->clearedCache[$playerName] = true;
+        Quests::getInstance()->getLogger()->debug("[$playerName] 퀘스트 '{$this->displayName}' (ID: {$this->id}) 클리어 캐시 업데이트 완료");
 
         // DB에 클리어 기록 저장
         Quests::getInstance()->getDatabaseManager()->saveCleared($playerName, $this->id);
@@ -190,9 +190,9 @@ class Quest{
         // DB에서 진행 데이터 삭제
         Quests::getInstance()->getDatabaseManager()->deleteProgress($playerName, $this->id);
 
-        // 가이드 퀘스트인 경우 스코어보드 업데이트 (다음 퀘스트 표시)
-        if($this->type === self::TYPE_GUIDE && $playerClass !== null){
-            QuestInfoIntegration::updateScoreboard($playerClass);
+        // 가이드 퀘스트 완료 시 타이틀 알림 업데이트 (다음 퀘스트 표시 또는 제거)
+        if($this->type === self::TYPE_GUIDE && $playerClass !== null && $playerClass->isConnected()){
+            Quests::getInstance()->sendQuestNotification($playerClass);
         }
     }
 

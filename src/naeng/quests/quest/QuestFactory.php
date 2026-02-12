@@ -41,6 +41,12 @@ class QuestFactory{
                 $quests[] = $quest;
             }
         }
+
+        // ID 순서대로 정렬하여 일관된 순서 보장
+        usort($quests, function(Quest $a, Quest $b) : int {
+            return strcmp($a->getId(), $b->getId());
+        });
+
         return $quests;
     }
 
@@ -82,5 +88,31 @@ class QuestFactory{
         foreach($this->getDailyQuests() as $quest){
             $quest->reset();
         }
+    }
+
+    /**
+     * 현재 진행 중인 가이드 퀘스트 반환
+     */
+    public function getCurrentGuideQuest(Player $player) : ?Quest{
+        foreach($this->getGuideQuests() as $quest){
+            if(!$quest->isCleared($player)){
+                return $quest;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * 현재 가이드 퀘스트의 단계 번호 반환
+     */
+    public function getCurrentQuestStage(Player $player) : int{
+        $stage = 1;
+        foreach($this->getGuideQuests() as $quest){
+            if(!$quest->isCleared($player)){
+                return $stage;
+            }
+            $stage++;
+        }
+        return $stage;
     }
 }
