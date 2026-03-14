@@ -4,11 +4,15 @@ namespace naeng\quests\quest;
 
 use naeng\MailCore\data\MailInfo;
 use naeng\MailCore\MailCore;
+use naeng\quests\event\QuestClearEvent;
 use naeng\quests\quest\missions\Mission;
 use naeng\quests\Quests;
 use pocketmine\item\Item;
 use pocketmine\player\Player;
 use pocketmine\Server;
+use RoMo\VaultCore\data\asset\default\Gold;
+use RoMo\VaultCore\data\VaultManager;
+use RoMo\VaultCore\VaultCore;
 use RoMo\XuidCore\XuidCore;
 use SOFe\AwaitGenerator\Await;
 
@@ -31,7 +35,8 @@ class Quest{
         private readonly int    $type,
         private array           $missions = [],
         private array           $rewardItems = [],
-        private int             $rewardIslandProgress = 0
+        private int             $rewardIslandProgress = 0,
+        private int             $rewardGold = 0
     ){
     }
 
@@ -74,6 +79,14 @@ class Quest{
 
     public function setRewardIslandProgress(int $islandProgress) : void{
         $this->rewardIslandProgress = $islandProgress;
+    }
+
+    public function getRewardGold() : int{
+        return $this->rewardGold;
+    }
+
+    public function setRewardGold(int $gold) : void{
+        $this->rewardGold = $gold;
     }
 
     public function giveUp(Player|string $player) : void{
@@ -151,26 +164,38 @@ class Quest{
         }
 
         $items = $this->getRewardItems();
+        $gold  = $this->rewardGold;
 
-        if(count($items) > 0){
-            Await::f2c(function() use($playerName, $xuid, $items){
+        if(count($items) > 0 || $gold > 0){
+            Await::f2c(function() use($playerName, $xuid, $items, $gold){
                 $xuid ??= yield from XuidCore::getInstance()->getXuidByName($playerName);
 
                 if($xuid === null){
                     return;
                 }
 
-                if(!(yield from MailCore::getInstance()->send(
-                    new MailInfo(
-                        null,
-                        $xuid,
-                        $this->displayName . " 클리어 보상",
-                        "퀘스트 클리어 축하드려요!",
-                        0,
-                        $items
-                    )
-                ))){
-                    Server::getInstance()->getLogger()->error("퀘스트 보상 지급 실패: {quest:{$this->id},xuid:{$xuid}");
+                // 아이템 보상 지급 (MailCore)
+                if(count($items) > 0){
+                    if(!(yield from MailCore::getInstance()->send(
+                        new MailInfo(
+                            null,
+                            $xuid,
+                            $this->displayName . " 클리어 보상",
+                            "퀘스트 클리어 축하드려요!",
+                            0,
+                            $items
+                        )
+                    ))){
+                        Server::getInstance()->getLogger()->error("퀘스트 보상 지급 실패: {quest:{$this->id},xuid:{$xuid}");
+                    }
+                }
+
+                // 골드 보상 지급 (VaultCore)
+                if($gold > 0 && class_exists(VaultCore::class)){
+                    $vault = yield from VaultManager::getInstance()->get((int) $xuid);
+                    if($vault !== null){
+                        yield from $vault->give(Gold::ID, $gold, "퀘스트 클리어: " . $this->displayName);
+                    }
                 }
             });
         }
@@ -178,6 +203,11 @@ class Quest{
         // 미션 진행 데이터 삭제
         foreach($this->missions as $mission){
             $mission->deleteProgress($player);
+        }
+
+        // 퀘스트 클리어 이벤트 발동
+        if($playerClass !== null){
+            (new QuestClearEvent($playerClass, $this))->call();
         }
 
         // 메모리 캐시 업데이트
