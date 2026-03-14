@@ -10,9 +10,14 @@ use muqsit\invmenu\InvMenuHandler;
 use naeng\quests\command\QuestAdminCommand;
 use naeng\quests\command\QuestCommand;
 use naeng\quests\database\DatabaseManager;
+use naeng\quests\listener\FishQuestListener;
+use naeng\quests\quest\missions\defaults\ShopSellMission;
+use naeng\quests\quest\missions\defaults\ToolUpgradeMission;
 use naeng\quests\quest\QuestFactory;
+use naeng\quests\quest\QuestRegistry;
 use naeng\quests\utils\ItemUtils;
 use pocketmine\event\block\BlockBreakEvent;
+use pocketmine\event\block\BlockPlaceEvent;
 use pocketmine\event\Listener;
 use pocketmine\event\player\PlayerChatEvent;
 use pocketmine\event\player\PlayerJoinEvent;
@@ -67,6 +72,18 @@ class Quests extends PluginBase implements Listener{
         // 이벤트 리스너 등록
         $this->getServer()->getPluginManager()->registerEvents($this, $this);
 
+        // FishPlugin 연동
+        if($this->getServer()->getPluginManager()->getPlugin("FishPlugin") !== null){
+            $this->getServer()->getPluginManager()->registerEvents(new FishQuestListener(), $this);
+            foreach(QuestRegistry::getFishQuests() as $quest){
+                $this->questFactory->addQuest($quest);
+            }
+            foreach(QuestRegistry::getFishGuideQuests() as $quest){
+                $this->questFactory->addQuest($quest);
+            }
+            $this->getLogger()->info("FishPlugin 연동 완료 - 낚시 퀘스트 활성화");
+        }
+
         // DB에서 보상 데이터 로드
         $this->loadRewardsFromDb();
 
@@ -80,7 +97,6 @@ class Quests extends PluginBase implements Listener{
             NpcDialogueManager::register($this);
             $this->getLogger()->info("NpcDialogue 연동 완료");
         }
-
 
         // 초기 날짜 체크
         $this->checkDate();
@@ -159,12 +175,49 @@ class Quests extends PluginBase implements Listener{
         return $this->questFactory;
     }
 
+    // ─────────────────────────────────────────────────────────────────
+    // 외부 플러그인 연동 트리거
+    // ─────────────────────────────────────────────────────────────────
+
+    /**
+     * 상점 플러그인에서 판매 완료 시 호출
+     * 예) Quests::getInstance()->handleShopSell($player, "광물상점");
+     */
+    public function handleShopSell(Player $player, string $shopId) : void{
+        $this->getLogger()->info("[ShopSell] player={$player->getName()}, shopId=\"{$shopId}\"");
+        foreach($this->questFactory->getQuests() as $quest){
+            foreach($quest->getMissions() as $mission){
+                if($mission instanceof ShopSellMission && $mission->getShopId() === $shopId){
+                    $mission->handleSell($player);
+                }
+            }
+        }
+    }
+
+    /**
+     * ToolCore에서 도구 강화 완료 시 호출
+     * 예) Quests::getInstance()->handleToolUpgrade($player);
+     */
+    public function handleToolUpgrade(Player $player) : void{
+        foreach($this->questFactory->getQuests() as $quest){
+            foreach($quest->getMissions() as $mission){
+                if($mission instanceof ToolUpgradeMission){
+                    $mission->handleUpgrade($player);
+                }
+            }
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────
+    // 이벤트 핸들러
+    // ─────────────────────────────────────────────────────────────────
+
     /**
      * 플레이어 접속 시 클리어 데이터 로드
      * @priority MONITOR
      */
     public function handlePlayerJoinEvent(PlayerJoinEvent $event) : void{
-        $player = $event->getPlayer();
+        $player     = $event->getPlayer();
         $playerName = strtolower($player->getName());
 
         Await::f2c(function() use($player, $playerName) : Generator{
@@ -187,7 +240,7 @@ class Quests extends PluginBase implements Listener{
                     }
                 }
 
-                // 진행 데이터 로드 후 완료 여부 체크 (이전 세션에서 미완료된 퀘스트 처리)
+                // 진행 데이터 로드 후 완료 여부 체크
                 if(!$quest->isCleared($playerName) && count($progressData) > 0){
                     $quest->clearCheck($playerName);
                 }
@@ -215,6 +268,21 @@ class Quests extends PluginBase implements Listener{
         foreach($this->questFactory->getQuests() as $quest){
             foreach($quest->getMissions() as $mission){
                 $mission->handleBlockBreakEvent($event);
+            }
+        }
+    }
+
+    /**
+     * @priority MONITOR
+     */
+    public function handleBlockPlaceEvent(BlockPlaceEvent $event) : void{
+        if($event->isCancelled()){
+            return;
+        }
+
+        foreach($this->questFactory->getQuests() as $quest){
+            foreach($quest->getMissions() as $mission){
+                $mission->handleBlockPlaceEvent($event);
             }
         }
     }
@@ -287,12 +355,12 @@ class Quests extends PluginBase implements Listener{
         $stage = $this->questFactory->getCurrentQuestStage($player);
         $title = "§e§l{$stage}. {$quest->getDisplayName()}";
 
-        $titleLines = [];
+        $titleLines    = [];
         $subtitleLines = [];
         foreach($quest->getMissions() as $mission){
             $isCleared = $mission->isCleared($player);
-            $progress = $mission->getProgress($player) ?? 0;
-            $info = $mission->getInformation();
+            $progress  = $mission->getProgress($player) ?? 0;
+            $info      = $mission->getInformation();
 
             // 타겟 수 가져오기
             $target = 1;
@@ -303,16 +371,16 @@ class Quests extends PluginBase implements Listener{
                 }
             }
 
-            $checkMark = $isCleared ? "§a✓" : "§7○";
-            $color = $isCleared ? "§a" : "§f";
+            $checkMark     = $isCleared ? "§a✓" : "§7○";
+            $color         = $isCleared ? "§a" : "§f";
             $progressColor = $isCleared ? "§a" : "§7";
 
-            $titleLines[] = "{$checkMark} {$color}{$info}";
+            $titleLines[]    = "{$checkMark} {$color}{$info}";
             $subtitleLines[] = "{$progressColor}§l({$progress}/{$target})";
         }
 
         // 타이틀과 서브타이틀 전송
-        $message = $title . "\n" . implode("\n", $titleLines);
+        $message  = $title . "\n" . implode("\n", $titleLines);
         $subtitle = implode(" ", $subtitleLines);
         $player->sendTitle("§A§C{$message}", "§A§D{$subtitle}");
     }
