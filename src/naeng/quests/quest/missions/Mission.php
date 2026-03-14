@@ -6,6 +6,7 @@ use alvin0319\VotifierAPI\event\PlayerVoteEvent;
 use naeng\quests\quest\Quest;
 use naeng\quests\Quests;
 use pocketmine\event\block\BlockBreakEvent;
+use pocketmine\event\block\BlockPlaceEvent;
 use pocketmine\event\player\PlayerChatEvent;
 use pocketmine\event\server\CommandEvent;
 use pocketmine\player\Player;
@@ -100,6 +101,9 @@ abstract class Mission{
     }
 
     public function handleBlockBreakEvent(BlockBreakEvent $event) : void{
+    }
+
+    public function handleBlockPlaceEvent(BlockPlaceEvent $event) : void{
     }
 
     public function handleCommandEvent(CommandEvent $event) : void{
