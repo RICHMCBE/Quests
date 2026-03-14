@@ -81,7 +81,6 @@ class PlantCropMission extends Mission{
 
     public function handleBlockPlaceEvent(BlockPlaceEvent $event) : void{
         $player = $event->getPlayer();
-        $block  = $event->getBlock();
 
         if(!$this->isTrying($player)){
             if($this->quest !== null && $this->quest->isAutoAccept() && !$this->quest->isCleared($player)){
@@ -95,7 +94,14 @@ class PlantCropMission extends Mission{
             return;
         }
 
-        if(!$this->isMatchingPlant($block)){
+        $found = false;
+        foreach($event->getTransaction()->getBlocks() as [, , , $block]){
+            if($this->isMatchingPlant($block)){
+                $found = true;
+                break;
+            }
+        }
+        if(!$found){
             return;
         }
 
