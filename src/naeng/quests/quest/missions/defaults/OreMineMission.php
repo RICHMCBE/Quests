@@ -6,13 +6,12 @@ namespace naeng\quests\quest\missions\defaults;
 
 use naeng\quests\quest\missions\Mission;
 use pocketmine\block\Block;
-use pocketmine\block\Cobblestone;
 use pocketmine\block\CoalOre;
+use pocketmine\block\VanillaBlocks;
 use pocketmine\block\DiamondOre;
 use pocketmine\block\EmeraldOre;
 use pocketmine\block\GoldOre;
 use pocketmine\block\IronOre;
-use pocketmine\block\Stone;
 use pocketmine\event\block\BlockBreakEvent;
 use pocketmine\player\Player;
 
@@ -28,7 +27,7 @@ class OreMineMission extends Mission{
     public const ORE_EMERALD = "emerald";
 
     public static array $oreNames = [
-        self::ORE_STONE   => "조약돌",
+        self::ORE_STONE   => "일반 돌",
         self::ORE_COAL    => "석탄",
         self::ORE_IRON    => "철광석",
         self::ORE_GOLD    => "금광석",
@@ -74,7 +73,7 @@ class OreMineMission extends Mission{
 
     private function isMatchingOre(Block $block) : bool{
         return match($this->oreType){
-            self::ORE_STONE   => $block instanceof Stone || $block instanceof Cobblestone,
+            self::ORE_STONE   => $block->getTypeId() === VanillaBlocks::STONE()->getTypeId(),
             self::ORE_COAL    => $block instanceof CoalOre,
             self::ORE_IRON    => $block instanceof IronOre,
             self::ORE_GOLD    => $block instanceof GoldOre,
