@@ -20,6 +20,10 @@ class QuestFactory{
         }
     }
 
+    public function addQuest(Quest $quest) : void{
+        $this->quests[$quest->getId()] = $quest;
+    }
+
     /**
      * @return Quest[]
      */
