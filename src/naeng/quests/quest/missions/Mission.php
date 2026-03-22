@@ -10,6 +10,7 @@ use pocketmine\event\block\BlockPlaceEvent;
 use pocketmine\event\player\PlayerChatEvent;
 use pocketmine\event\server\CommandEvent;
 use pocketmine\player\Player;
+use pocketmine\scheduler\ClosureTask;
 use pocketmine\Server;
 
 abstract class Mission{
@@ -76,8 +77,14 @@ abstract class Mission{
             if($playerInstance !== null && $playerInstance->isConnected()){
                 // 먼저 클리어 체크 (완료 시 캐시 업데이트)
                 $this->quest->clearCheck($playerInstance);
-                // 그 다음 화면 오른쪽에 타이틀 알림 전송
-                Quests::getInstance()->sendQuestNotification($playerInstance);
+                // 다른 플러그인 타이틀과 겹치지 않도록 3초 딜레이 후 갱신
+                Quests::getInstance()->getScheduler()->scheduleDelayedTask(new ClosureTask(
+                    function() use($playerInstance) : void{
+                        if($playerInstance->isConnected()){
+                            Quests::getInstance()->sendQuestNotification($playerInstance);
+                        }
+                    }
+                ), 60);
             }
         }
     }
