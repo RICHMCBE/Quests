@@ -9,6 +9,7 @@ use naeng\quests\quest\missions\Mission;
 use naeng\quests\Quests;
 use pocketmine\item\Item;
 use pocketmine\player\Player;
+use pocketmine\scheduler\ClosureTask;
 use pocketmine\Server;
 use RoMo\VaultCore\data\asset\default\Gold;
 use RoMo\VaultCore\data\VaultManager;
@@ -137,7 +138,7 @@ class Quest{
         $this->clear($player);
     }
 
-    public function clear(Player|string $player) : void{
+    public function clear(Player|string $player, bool $notifyPlayer = true) : void{
         $playerName = strtolower($player instanceof Player ? $player->getName() : $player);
 
         if($this->isClearedCached($playerName)){
@@ -159,7 +160,7 @@ class Quest{
             $xuid = $playerClass->getXuid();
         }
 
-        if($playerClass !== null){
+        if($notifyPlayer && $playerClass !== null){
             $playerClass->sendMessage(Quests::PREFIX . "퀘스트 [ {$this->displayName} ] 를 클리어 하셨습니다!");
         }
 
@@ -221,8 +222,15 @@ class Quest{
         Quests::getInstance()->getDatabaseManager()->deleteProgress($playerName, $this->id);
 
         // 가이드 퀘스트 완료 시 타이틀 알림 업데이트 (다음 퀘스트 표시 또는 제거)
-        if($this->type === self::TYPE_GUIDE && $playerClass !== null && $playerClass->isConnected()){
-            Quests::getInstance()->sendQuestNotification($playerClass);
+        // 다른 플러그인 타이틀과 겹치지 않도록 3초 딜레이 후 갱신
+        if($notifyPlayer && $this->type === self::TYPE_GUIDE && $playerClass !== null && $playerClass->isConnected()){
+            Quests::getInstance()->getScheduler()->scheduleDelayedTask(new ClosureTask(
+                function() use($playerClass) : void{
+                    if($playerClass->isConnected()){
+                        Quests::getInstance()->sendQuestNotification($playerClass);
+                    }
+                }
+            ), 60);
         }
     }
 
