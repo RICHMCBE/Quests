@@ -16,9 +16,6 @@ use SOFe\AwaitGenerator\Await;
 
 class AdminQuestDetailForm implements Form{
 
-    private const ACTION_REWARD = 0;
-    private const ACTION_BACK   = 1;
-
     public function __construct(
         private readonly QuestAdminCommand $command,
         private readonly QuestFactory $questFactory,
@@ -28,25 +25,41 @@ class AdminQuestDetailForm implements Form{
     public function jsonSerialize() : array{
         $hasReward = count($this->quest->getRewardItems()) > 0 ? "§a보상 설정됨" : "§c보상 없음";
 
+        $buttons = [
+            ["text" => "§r§l아이템 보상 변경하기\n§r§8아이템 보상을 설정합니다"],
+        ];
+
+        if($this->quest->getType() === Quest::TYPE_GUIDE){
+            $buttons[] = ["text" => "§r§l플레이어 강제 클리어\n§r§8특정 플레이어의 퀘스트를 강제 클리어합니다"];
+        }
+
+        $buttons[] = ["text" => "§r§l돌아가기\n§r§8퀘스트 목록으로 돌아갑니다"];
+
         return [
             "type"    => "form",
             "title"   => $this->quest->getDisplayName(),
             "content" => "§8{$hasReward}",
-            "buttons" => [
-                ["text" => "§r§l아이템 보상 변경하기\n§r§8아이템 보상을 설정합니다"],
-                ["text" => "§r§l돌아가기\n§r§8퀘스트 목록으로 돌아갑니다"],
-            ]
+            "buttons" => $buttons
         ];
     }
 
     public function handleResponse(Player $player, $data) : void{
         if($data === null) return;
 
-        match((int)$data){
-            self::ACTION_REWARD => $this->openRewardEditor($player),
-            self::ACTION_BACK   => $player->sendForm(new AdminQuestMainForm($this->command, $this->questFactory)),
-            default => null
-        };
+        $isGuide = $this->quest->getType() === Quest::TYPE_GUIDE;
+
+        if($data === 0){
+            $this->openRewardEditor($player);
+            return;
+        }
+
+        if($isGuide && $data === 1){
+            $player->sendForm(new AdminForceClearForm($this->command, $this->questFactory, $this->quest));
+            return;
+        }
+
+        // 돌아가기 (가이드: index 2, 그 외: index 1)
+        $player->sendForm(new AdminQuestMainForm($this->command, $this->questFactory));
     }
 
     private function openRewardEditor(Player $player) : void{
