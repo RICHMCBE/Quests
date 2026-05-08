@@ -75,16 +75,19 @@ abstract class Mission{
         if($this->quest !== null && $this->quest->getType() === Quest::TYPE_GUIDE){
             $playerInstance = $player instanceof Player ? $player : Server::getInstance()->getPlayerExact($name);
             if($playerInstance !== null && $playerInstance->isConnected()){
-                // 먼저 클리어 체크 (완료 시 캐시 업데이트)
+                // 먼저 클리어 체크 (완료 시 캐시 업데이트 + clear()가 자체적으로 알림 예약)
                 $this->quest->clearCheck($playerInstance);
-                // 다른 플러그인 타이틀과 겹치지 않도록 3초 딜레이 후 갱신
-                Quests::getInstance()->getScheduler()->scheduleDelayedTask(new ClosureTask(
-                    function() use($playerInstance) : void{
-                        if($playerInstance->isConnected()){
-                            Quests::getInstance()->sendQuestNotification($playerInstance);
+                // 퀘스트가 클리어되지 않은 경우에만 진행도 표시 업데이트 예약
+                // (클리어된 경우 clear()가 이미 알림을 예약했으므로 중복 전송 방지)
+                if(!$this->quest->isCleared($playerInstance)){
+                    Quests::getInstance()->getScheduler()->scheduleDelayedTask(new ClosureTask(
+                        function() use($playerInstance) : void{
+                            if($playerInstance->isConnected()){
+                                Quests::getInstance()->sendQuestNotification($playerInstance);
+                            }
                         }
-                    }
-                ), 60);
+                    ), 60);
+                }
             }
         }
     }
