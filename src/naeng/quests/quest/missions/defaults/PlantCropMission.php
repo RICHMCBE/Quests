@@ -112,9 +112,9 @@ class PlantCropMission extends Mission{
         if($this->quest !== null){
             $questName = $this->quest->getDisplayName();
             if($newProgress >= $this->count){
-                $player->sendPopup("§a§l[미션 완료] §r§f{$this->getPlantDisplayName()} {$this->count}개 심기 완료!");
+                $player->sendPopup("§r丌 §f{$this->getInformation()}");
             }else{
-                $player->sendPopup("§6§l[퀘스트] §r§f{$questName} §7- §e{$newProgress}§7/§f{$this->count}");
+                $player->sendPopup("§r不 §f{$this->getInformation()} §7- §e{$newProgress}§7/§f{$this->count}");
             }
             $this->quest->clearCheck($player);
         }
