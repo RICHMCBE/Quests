@@ -48,7 +48,7 @@ class QuestFactory{
 
         // ID 순서대로 정렬하여 일관된 순서 보장
         usort($quests, function(Quest $a, Quest $b) : int {
-            return strcmp($a->getId(), $b->getId());
+            return strnatcmp($a->getId(), $b->getId());
         });
 
         return $quests;
