@@ -20,7 +20,7 @@ class QuestTypeForm implements Form {
         $buttons = [];
         foreach($this->quests as $quest) {
             $buttons[] = [
-                "text" => "§r§l" . $quest->getName() . "\n§r§8" .
+                "text" => "§r§l" . $quest->getDisplayName() . "\n§r§8" .
                     $this->command->getStatusMessage($quest, $this->player)
             ];
         }
@@ -48,7 +48,7 @@ class QuestTypeForm implements Form {
 
             // 클리어된 퀘스트는 단순히 메시지만 보여줌
             if($quest->isCleared($player)) {
-                $player->sendMessage(Quests::PREFIX . "이미 클리어한 퀘스트입니다.");
+                $player->sendMessage("§r与 이미 클리어한 퀘스트입니다.");
                 return;
             }
 

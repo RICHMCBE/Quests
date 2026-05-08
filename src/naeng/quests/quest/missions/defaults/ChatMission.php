@@ -3,88 +3,93 @@
 namespace naeng\quests\quest\missions\defaults;
 
 use naeng\quests\quest\missions\Mission;
-use naeng\quests\quest\Quest;
-use naeng\quests\Quests;
 use pocketmine\event\player\PlayerChatEvent;
 use pocketmine\player\Player;
 
 class ChatMission extends Mission{
 
-    public const NAME = "채팅 보내기";
-    public const DEFAULT_PROGRESS = 0;
+    public const NAME = "채팅하기";
 
-    public function __construct(protected readonly string $message, protected readonly int $count, array $playerData = [], ?Quest $quest = null){
-        parent::__construct($playerData, $quest);
+    public function __construct(
+        private readonly string $message,
+        private readonly string $displayName
+    ){
     }
 
-    public function currentProgress(Player|string $player): string{
-        $progress = $this->getProgress($player);
-        $currentProgress = "메시지 [ {$this->message} ] 전송하기";
-        if($progress !== null){
-            $currentProgress .= " ({$progress}/{$this->count})";
-        }
-        return $currentProgress;
-    }
-
-    public function getInformation() : string{
-        return "채팅 [ {$this->message} ] {$this->count}번 전송하기";
-    }
-
-    public function isCleared(Player|string $player) : bool{
-        return $this->getProgress($player, self::DEFAULT_PROGRESS) >= $this->count;
+    public function getName() : string{
+        return self::NAME;
     }
 
     public function getMessage() : string{
         return $this->message;
     }
 
-    public function getCount() : int{
-        return $this->count;
+    public function getDisplayName() : string{
+        return $this->displayName;
     }
 
-    public function handlePlayerChatEvent(PlayerChatEvent $event) : void{
+    public function getInformation() : string{
+        return "{$this->message} 채팅으로 입력하기";
+    }
+
+    public function currentProgress(Player|string $player) : string{
+        $cleared = $this->isCleared($player) ? "§a(완료)" : "§c(미완료)";
+        return "{$this->message} 채팅으로 입력하기 {$cleared}";
+    }
+
+    public function isCleared(Player|string $player) : bool{
+        return ($this->getProgress($player) ?? 0) >= 1;
+    }
+
+    public function handleChatEvent(PlayerChatEvent $event) : void{
+        $sender = $event->getPlayer();
         $message = $event->getMessage();
+
+        // 대상 메시지와 일치하지 않으면 무시
         if($message !== $this->message){
-            return; // 미션과 관련 없는 메시지
-        }
-        $player = $event->getPlayer();
-        $progress = $this->getProgress($player);
-        if($progress === null){
-            return; // 해당 미션과 관련 없는 플레이어
-        }elseif($progress >= $this->count){
             return;
-        }elseif(++$progress == $this->count){
-            $this->setProgress($player, $progress);
-            $player->sendMessage(Quests::PREFIX . "메시지 [ {$message} ] 전송하기 미션을 클리어 했습니다");
-            $this->getQuest()?->clearCheck($player);
-            return; // 미션 클리어
         }
-        $this->setProgress($player, $progress);
-        $player->sendMessage(Quests::PREFIX . "메시지 [ {$message} ] 전송하기 미션 진행 중.. ({$progress}/{$this->count})");
+
+        // 이미 완료했으면 스킵
+        if($this->isCleared($sender)){
+            return;
+        }
+
+        // 가이드 퀘스트는 자동 수락이므로, 진행 데이터가 없으면 생성
+        if(!$this->isTrying($sender)){
+            if($this->quest !== null && $this->quest->isAutoAccept() && !$this->quest->isCleared($sender)){
+                $this->setProgress($sender, self::DEFAULT_PROGRESS);
+            }else{
+                return;
+            }
+        }
+
+        // 채팅 완료 처리
+        $this->setProgress($sender, 1);
+
+        // 완료 메시지 전송
+        if($this->quest !== null){
+            $sender->sendPopup("§r丌 {$this->displayName}");
+            $this->quest->clearCheck($sender);
+        }
+        // 업데이트는 setProgress()와 clear()에서 자동으로 호출됨
     }
 
     public function jsonSerialize() : array{
         return [
-            "name"       => self::NAME,
-            "playerData" => $this->playerData,
-            "message"    => $this->message,
-            "count"      => $this->count
+            "name" => self::NAME,
+            "message" => $this->message,
+            "displayName" => $this->displayName,
+            "playerData" => $this->playerData
         ];
     }
 
-    public static function jsonDeserialize(array $jsonSerializedMission) : self{
-        unset($jsonSerializedMission["name"]);
-        return new self(...$jsonSerializedMission);
+    public static function jsonDeserialize(array $data) : static{
+        $mission = new static(
+            $data["message"],
+            $data["displayName"]
+        );
+        $mission->setPlayerData($data["playerData"] ?? []);
+        return $mission;
     }
-
-    public function equals(Mission $mission) : bool{
-        if(!parent::equals($mission)){
-            return false;
-        }
-        if(!$mission instanceof ChatMission){
-            return false;
-        }
-        return $this->message === $mission->getMessage() && $this->count === $mission->getCount();
-    }
-
 }

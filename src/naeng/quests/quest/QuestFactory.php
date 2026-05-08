@@ -2,44 +2,37 @@
 
 namespace naeng\quests\quest;
 
-use naeng\quests\Quests;
 use pocketmine\player\Player;
-use Symfony\Component\Filesystem\Path;
 
 class QuestFactory{
 
-    /**
-     * @var Quest[]
-     */
+    /** @var array<string, Quest> */
     private array $quests = [];
 
     public function __construct(){
-        if(file_exists($this->getDataDirectory())){
-            foreach(yaml_parse_file($this->getDataDirectory()) as $arraySerializedQuest){
-                $quest = Quest::jsonDeserialize($arraySerializedQuest);
-                $this->quests[$quest->getName()] = $quest;
-            }
+        $this->loadQuests();
+    }
+
+    private function loadQuests() : void{
+        // 하드코딩된 퀘스트 로드
+        foreach(QuestRegistry::getQuests() as $quest){
+            $this->quests[$quest->getId()] = $quest;
         }
     }
 
-    public function save() : void{
-        $quests = [];
-        foreach($this->quests as $quest){
-            $quests[] = $quest->jsonSerialize();
-        }
-        yaml_emit_file($this->getDataDirectory(), $quests, YAML_UTF8_ENCODING);
+    public function addQuest(Quest $quest) : void{
+        $this->quests[$quest->getId()] = $quest;
     }
 
-    public function getDataDirectory() : string{
-        return Path::join(Quests::getInstance()->getDataFolder(), 'quests.yml');
-    }
-
+    /**
+     * @return Quest[]
+     */
     public function getQuests() : array{
         return $this->quests;
     }
 
-    public function getQuest(string $questName) : ?Quest{
-        return ($this->quests[$questName] ?? null);
+    public function getQuest(string $questId) : ?Quest{
+        return $this->quests[$questId] ?? null;
     }
 
     /**
@@ -52,35 +45,39 @@ class QuestFactory{
                 $quests[] = $quest;
             }
         }
+
+        // ID 순서대로 정렬하여 일관된 순서 보장
+        usort($quests, function(Quest $a, Quest $b) : int {
+            return strcmp($a->getId(), $b->getId());
+        });
+
         return $quests;
     }
 
+    /**
+     * @return Quest[]
+     */
     public function getDailyQuests() : array{
         return $this->getQuestsByType(Quest::TYPE_DAILY);
     }
 
+    /**
+     * @return Quest[]
+     */
     public function getNormalQuests() : array{
         return $this->getQuestsByType(Quest::TYPE_NORMAL);
     }
 
-    public function addQuest(Quest $quest) : bool{
-        $name = $quest->getName();
-        if(isset($this->quests[$name])){
-            return false;
-        }
-        $this->quests[$name] = $quest;
-        return true;
+    /**
+     * @return Quest[]
+     */
+    public function getGuideQuests() : array{
+        return $this->getQuestsByType(Quest::TYPE_GUIDE);
     }
 
-    public function removeQuest(Quest|string $quest) : bool{
-        $name = $quest instanceof Quest ? $quest->getName() : $quest;
-        if(!isset($this->quests[$name])){
-            return false;
-        }
-        unset($this->quests[$name]);
-        return true;
-    }
-
+    /**
+     * @return Quest[]
+     */
     public function getClearedQuests(Player|string $player) : array{
         $quests = [];
         foreach($this->quests as $quest){
@@ -91,11 +88,45 @@ class QuestFactory{
         return $quests;
     }
 
-    /**
-     * @return Quest[]
-     */
-    public function getGuideQuests() : array{
-        return $this->getQuestsByType(Quest::TYPE_GUIDE);
+    public function resetDailyQuests() : void{
+        foreach($this->getDailyQuests() as $quest){
+            $quest->reset();
+        }
     }
 
+    /**
+     * 일일 퀘스트 미션을 새로 생성 (랜덤 미션 재선택)
+     * 날짜 리셋 후 호출
+     */
+    public function rebuildDailyQuests() : void{
+        foreach(QuestRegistry::getDailyQuests() as $quest){
+            $this->quests[$quest->getId()] = $quest;
+        }
+    }
+
+    /**
+     * 현재 진행 중인 가이드 퀘스트 반환
+     */
+    public function getCurrentGuideQuest(Player $player) : ?Quest{
+        foreach($this->getGuideQuests() as $quest){
+            if(!$quest->isCleared($player)){
+                return $quest;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * 현재 가이드 퀘스트의 단계 번호 반환
+     */
+    public function getCurrentQuestStage(Player $player) : int{
+        $stage = 1;
+        foreach($this->getGuideQuests() as $quest){
+            if(!$quest->isCleared($player)){
+                return $stage;
+            }
+            $stage++;
+        }
+        return $stage;
+    }
 }

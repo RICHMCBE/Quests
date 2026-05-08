@@ -2,6 +2,7 @@
 
 namespace naeng\quests\command;
 
+use kim\present\koritemname\KorItemName;
 use naeng\quests\form\QuestDetailForm;
 use naeng\quests\form\QuestMainForm;
 use naeng\quests\form\QuestTypeForm;
@@ -38,12 +39,12 @@ class QuestCommand extends Command {
 
     public function execute(CommandSender $sender, string $commandLabel, array $args) : void {
         if(!$sender instanceof Player) {
-            $sender->sendMessage(Quests::PREFIX . "게임에 접속하여 실행 해주세요");
+            $sender->sendMessage("§r与 게임에 접속하여 실행 해주세요");
             return;
         }
 
         if(!$this->testPermission($sender)) {
-            $sender->sendMessage(Quests::PREFIX . "명령어를 사용할 권한이 없습니다");
+            $sender->sendMessage("§r下 명령어를 사용할 권한이 없습니다");
             return;
         }
 

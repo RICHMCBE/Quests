@@ -1,15 +1,29 @@
 name: Quests
 author: naeng
 main: naeng\quests\Quests
-version: 1.2.2
+version: 1.5.6
 api: 5.0.0
 depend:
   - XuidCore
-  - NaengUtils
+  - KorItemName
   - MailCore
+  - SqlCore
+softdepend:
+  - Customies
+  - DivingMine
+  - FishPlugin
+  - BossPlugin
+  - VotifierAPI
+  - NeighborPlugin
+  - AttendanceCheck
+  - RankPrefix
+  - Warehouse
+  - UserExchange
+  - NeighborhoodShop
 virions:
   - SOF3/await-generator/master
-  - jojoe77777/FormAPI/2.1.1
+  - poggit/libasynql/4.0.0
+  - presentkim-pm/nbt-serializer/3.0.0
   - presentkim-pm/item-serialize-utils/3.1.0
 permissions:
   quests.staff.command:
