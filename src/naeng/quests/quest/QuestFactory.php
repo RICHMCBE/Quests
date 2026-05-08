@@ -95,6 +95,16 @@ class QuestFactory{
     }
 
     /**
+     * 일일 퀘스트 미션을 새로 생성 (랜덤 미션 재선택)
+     * 날짜 리셋 후 호출
+     */
+    public function rebuildDailyQuests() : void{
+        foreach(QuestRegistry::getDailyQuests() as $quest){
+            $this->quests[$quest->getId()] = $quest;
+        }
+    }
+
+    /**
      * 현재 진행 중인 가이드 퀘스트 반환
      */
     public function getCurrentGuideQuest(Player $player) : ?Quest{
