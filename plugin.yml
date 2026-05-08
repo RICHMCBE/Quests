@@ -23,6 +23,7 @@ softdepend:
 virions:
   - SOF3/await-generator/master
   - poggit/libasynql/4.0.0
+  - presentkim-pm/nbt-serializer/3.0.0
   - presentkim-pm/item-serialize-utils/3.1.0
   - Muqsit/NpcDialogue/0.1.1
 permissions:
