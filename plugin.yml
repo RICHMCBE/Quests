@@ -9,6 +9,7 @@ depend:
   - MailCore
   - SqlCore
 softdepend:
+  - HelloPlayer
   - Customies
   - DivingMine
   - FishPlugin
