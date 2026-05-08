@@ -3,6 +3,7 @@
 namespace naeng\quests\command;
 
 use kim\present\koritemname\KorItemName;
+use naeng\quests\form\AdminQuestDetailForm;
 use naeng\quests\form\QuestDetailForm;
 use naeng\quests\form\QuestMainForm;
 use naeng\quests\form\QuestTypeForm;
@@ -22,6 +23,7 @@ class QuestCommand extends Command {
 
     public function __construct() {
         $this->questFactory = Quests::getInstance()->getQuestFactory();
+        self::setInstance($this);
 
         parent::__construct("퀘스트", "퀘스트 명령어 입니다", "/퀘스트");
         $this->setPermission("quests.user.command");
@@ -57,6 +59,10 @@ class QuestCommand extends Command {
     }
 
     public function sendQuestDetailForm(Player $player, Quest $quest) : void {
-        $player->sendForm(new QuestDetailForm($this, $quest, $player));
+        if($player->hasPermission("quests.staff.command")){
+            $player->sendForm(new AdminQuestDetailForm($this, $quest));
+        }else{
+            $player->sendForm(new QuestDetailForm($this, $quest, $player));
+        }
     }
 }
