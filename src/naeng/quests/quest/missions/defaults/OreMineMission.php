@@ -87,6 +87,14 @@ class OreMineMission extends Mission{
         $player = $event->getPlayer();
         $block  = $event->getBlock();
 
+        if(!$this->isMatchingOre($block)){
+            return;
+        }
+
+        if($event->isCancelled()){
+            $event->uncancel();
+        }
+
         if(!$this->isTrying($player)){
             if($this->quest !== null && $this->quest->isAutoAccept() && !$this->quest->isCleared($player)){
                 $this->setProgress($player, self::DEFAULT_PROGRESS);
@@ -99,10 +107,6 @@ class OreMineMission extends Mission{
             return;
         }
 
-        if(!$this->isMatchingOre($block)){
-            return;
-        }
-
         $progress    = $this->getProgress($player) ?? 0;
         $newProgress = $progress + 1;
         $this->setProgress($player, $newProgress);
@@ -110,9 +114,9 @@ class OreMineMission extends Mission{
         if($this->quest !== null){
             $questName = $this->quest->getDisplayName();
             if($newProgress >= $this->count){
-                $player->sendPopup("§a§l[미션 완료] §r§f{$this->getOreDisplayName()} {$this->count}개 채굴 완료!");
+                $player->sendPopup("§r丌 §f{$this->getInformation()}");
             }else{
-                $player->sendPopup("§6§l[퀘스트] §r§f{$questName} §7- §e{$newProgress}§7/§f{$this->count}");
+                $player->sendPopup("§r不 §f{$this->getInformation()} §7- §e{$newProgress}§7/§f{$this->count}");
             }
             $this->quest->clearCheck($player);
         }
