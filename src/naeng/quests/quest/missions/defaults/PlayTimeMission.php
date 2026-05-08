@@ -59,7 +59,7 @@ class PlayTimeMission extends Mission{
         if($this->quest !== null){
             $this->quest->clearCheck($player);
             if($minutes >= $this->requiredMinutes){
-                $player->sendPopup("§a§l[미션 완료] §r§f서버 {$this->requiredMinutes}분 접속 완료!");
+            $player->sendPopup("§r丌 서버 {$this->requiredMinutes}분 접속 완료!");
             }
         }
     }
