@@ -118,11 +118,23 @@ class QuestFactory{
 
     /**
      * 현재 가이드 퀘스트의 단계 번호 반환
+     * quest ID 끝 숫자를 사용하므로 플러그인 미로드로 중간 ID가 없어도 올바른 번호를 표시
      */
     public function getCurrentQuestStage(Player $player) : int{
+        $quest = $this->getCurrentGuideQuest($player);
+        if($quest === null){
+            return count($this->getGuideQuests()) + 1;
+        }
+
+        // "guide_8" → 8 처럼 ID 마지막 숫자를 단계 번호로 사용
+        if(preg_match('/(\d+)$/', $quest->getId(), $matches)){
+            return (int) $matches[1];
+        }
+
+        // 숫자 추출 불가 시 위치 카운트 폴백
         $stage = 1;
-        foreach($this->getGuideQuests() as $quest){
-            if(!$quest->isCleared($player)){
+        foreach($this->getGuideQuests() as $q){
+            if(!$q->isCleared($player)){
                 return $stage;
             }
             $stage++;
