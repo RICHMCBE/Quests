@@ -1,7 +1,7 @@
 name: Quests
 author: naeng
 main: naeng\quests\Quests
-version: 1.5.4
+version: 1.5.5
 api: 5.0.0
 depend:
   - XuidCore
@@ -25,7 +25,6 @@ virions:
   - poggit/libasynql/4.0.0
   - presentkim-pm/nbt-serializer/3.0.0
   - presentkim-pm/item-serialize-utils/3.1.0
-  - Muqsit/NpcDialogue/0.1.1
 permissions:
   quests.staff.command:
     description: "퀘스트를 관리하기 위한 권한입니다"
