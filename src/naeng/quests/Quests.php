@@ -11,6 +11,12 @@ use naeng\quests\command\QuestAdminCommand;
 use naeng\quests\command\QuestCommand;
 use naeng\quests\database\DatabaseManager;
 use naeng\quests\listener\FishQuestListener;
+use naeng\PlayingTime\PlayingTime;
+use naeng\quests\quest\missions\defaults\PlayTimeMission;
+use naeng\quests\quest\missions\defaults\AttendanceClaimMission;
+use naeng\quests\quest\missions\defaults\DivingMineAcquireMission;
+use naeng\quests\quest\missions\defaults\ExchangeBuyMission;
+use naeng\quests\quest\missions\defaults\RankUpgradeMission;
 use naeng\quests\quest\missions\defaults\ShopSellMission;
 use naeng\quests\quest\missions\defaults\ToolUpgradeMission;
 use naeng\quests\quest\QuestFactory;
@@ -84,6 +90,62 @@ class Quests extends PluginBase implements Listener{
             $this->getLogger()->info("FishPlugin 연동 완료 - 낚시 퀘스트 활성화");
         }
 
+        // DivingMine 연동
+        if($this->getServer()->getPluginManager()->getPlugin("DivingMine") !== null){
+            foreach(QuestRegistry::getDivingMineGuideQuests() as $quest){
+                $this->questFactory->addQuest($quest);
+            }
+            $this->getLogger()->info("DivingMine 연동 완료 - 잠수광산 가이드 퀘스트 활성화");
+        }
+
+        // NeighborPlugin 연동
+        if($this->getServer()->getPluginManager()->getPlugin("NeighborPlugin") !== null){
+            foreach(QuestRegistry::getNeighborhoodGuideQuests() as $quest){
+                $this->questFactory->addQuest($quest);
+            }
+            $this->getLogger()->info("NeighborPlugin 연동 완료 - 길드 가이드 퀘스트 활성화");
+        }
+
+        // AttendanceCheck 연동
+        if($this->getServer()->getPluginManager()->getPlugin("AttendanceCheck") !== null){
+            foreach(QuestRegistry::getAttendanceGuideQuests() as $quest){
+                $this->questFactory->addQuest($quest);
+            }
+            $this->getLogger()->info("AttendanceCheck 연동 완료 - 출석 가이드 퀘스트 활성화");
+        }
+
+        // RankPrefix 연동
+        if($this->getServer()->getPluginManager()->getPlugin("RankPrefix") !== null){
+            foreach(QuestRegistry::getRankGuideQuests() as $quest){
+                $this->questFactory->addQuest($quest);
+            }
+            $this->getLogger()->info("RankPrefix 연동 완료 - 랭크 가이드 퀘스트 활성화");
+        }
+
+        // Warehouse 연동
+        if($this->getServer()->getPluginManager()->getPlugin("Warehouse") !== null){
+            foreach(QuestRegistry::getWarehouseGuideQuests() as $quest){
+                $this->questFactory->addQuest($quest);
+            }
+            $this->getLogger()->info("Warehouse 연동 완료 - 창고 가이드 퀘스트 활성화");
+        }
+
+        // UserExchange 연동
+        if($this->getServer()->getPluginManager()->getPlugin("UserExchange") !== null){
+            foreach(QuestRegistry::getExchangeGuideQuests() as $quest){
+                $this->questFactory->addQuest($quest);
+            }
+            $this->getLogger()->info("UserExchange 연동 완료 - 거래소 가이드 퀘스트 활성화");
+        }
+
+        // NeighborhoodShop 연동
+        if($this->getServer()->getPluginManager()->getPlugin("NeighborhoodShop") !== null){
+            foreach(QuestRegistry::getNeighborhoodShopGuideQuests() as $quest){
+                $this->questFactory->addQuest($quest);
+            }
+            $this->getLogger()->info("NeighborhoodShop 연동 완료 - 길드상점 가이드 퀘스트 활성화");
+        }
+
         // DB에서 보상 데이터 로드
         $this->loadRewardsFromDb();
 
@@ -105,6 +167,31 @@ class Quests extends PluginBase implements Listener{
         $this->getScheduler()->scheduleRepeatingTask(new ClosureTask(function() : void{
             $this->checkDate();
         }), 20 * 60 * 5);
+
+        // 1분마다 PlayingTime 플러그인에서 오늘 접속 시간을 읽어 진행도 갱신
+        if($this->getServer()->getPluginManager()->getPlugin("PlayingTime") !== null){
+            $this->getScheduler()->scheduleRepeatingTask(new ClosureTask(function() : void{
+                foreach($this->getServer()->getOnlinePlayers() as $player){
+                    foreach($this->questFactory->getDailyQuests() as $quest){
+                        foreach($quest->getMissions() as $mission){
+                            if(!($mission instanceof PlayTimeMission) || $mission->isCleared($player)){
+                                continue;
+                            }
+                            Await::f2c(function() use($player, $mission) : Generator{
+                                $session = yield from PlayingTime::getInstance()->getSession($player->getXuid());
+                                $todaySeconds = yield from $session->getToday();
+                                if($player->isOnline()){
+                                    $mission->updateFromPlayingTime($player, $todaySeconds);
+                                }
+                            });
+                        }
+                    }
+                }
+            }), 20 * 60);
+            $this->getLogger()->info("PlayingTime 연동 완료 - 접속시간 퀘스트 활성화");
+        }else{
+            $this->getLogger()->warning("PlayingTime 플러그인을 찾을 수 없습니다 - 접속시간 미션이 비활성화됩니다");
+        }
     }
 
     protected function onDisable() : void{
@@ -161,6 +248,9 @@ class Quests extends PluginBase implements Listener{
         // 일일 퀘스트 리셋
         $this->questFactory->resetDailyQuests();
         $this->databaseManager->resetDailyProgress();
+
+        // 일일 퀘스트 미션 재생성 (랜덤 미션 새로 선택)
+        $this->questFactory->rebuildDailyQuests();
     }
 
     public function getDatabase() : DataConnector{
@@ -187,8 +277,64 @@ class Quests extends PluginBase implements Listener{
         $this->getLogger()->info("[ShopSell] player={$player->getName()}, shopId=\"{$shopId}\"");
         foreach($this->questFactory->getQuests() as $quest){
             foreach($quest->getMissions() as $mission){
-                if($mission instanceof ShopSellMission && $mission->getShopId() === $shopId){
+                if($mission instanceof ShopSellMission && str_contains($shopId, $mission->getShopId())){
                     $mission->handleSell($player);
+                }
+            }
+        }
+    }
+
+    /**
+     * DivingMine에서 아이템 획득 시 호출
+     * 예) Quests::getInstance()->handleDivingMineAcquire($player);
+     */
+    public function handleDivingMineAcquire(Player $player) : void{
+        foreach($this->questFactory->getQuests() as $quest){
+            foreach($quest->getMissions() as $mission){
+                if($mission instanceof DivingMineAcquireMission){
+                    $mission->handleAcquire($player);
+                }
+            }
+        }
+    }
+
+    /**
+     * AttendanceCheck에서 출석 완료 시 호출
+     * 예) Quests::getInstance()->handleAttendanceClaim($player);
+     */
+    public function handleAttendanceClaim(Player $player) : void{
+        foreach($this->questFactory->getQuests() as $quest){
+            foreach($quest->getMissions() as $mission){
+                if($mission instanceof AttendanceClaimMission){
+                    $mission->handleClaim($player);
+                }
+            }
+        }
+    }
+
+    /**
+     * RankPrefix에서 랭크 업그레이드 완료 시 호출
+     * 예) Quests::getInstance()->handleRankUpgrade($player);
+     */
+    public function handleRankUpgrade(Player $player) : void{
+        foreach($this->questFactory->getQuests() as $quest){
+            foreach($quest->getMissions() as $mission){
+                if($mission instanceof RankUpgradeMission){
+                    $mission->handleUpgrade($player);
+                }
+            }
+        }
+    }
+
+    /**
+     * UserExchange에서 구매 완료 시 호출
+     * 예) Quests::getInstance()->handleExchangeBuy($player);
+     */
+    public function handleExchangeBuy(Player $player) : void{
+        foreach($this->questFactory->getQuests() as $quest){
+            foreach($quest->getMissions() as $mission){
+                if($mission instanceof ExchangeBuyMission){
+                    $mission->handleBuy($player);
                 }
             }
         }
@@ -206,6 +352,57 @@ class Quests extends PluginBase implements Listener{
                 }
             }
         }
+    }
+
+    /**
+     * 관리자용 가이드 퀘스트 강제 클리어
+     *
+     * @return Generator<int>
+     */
+    public function forceClearGuideQuests(Player $player, string $selection = "current") : Generator{
+        $playerName = strtolower($player->getName());
+        $clearedQuests = yield from $this->databaseManager->loadAllCleared($playerName);
+
+        foreach($clearedQuests as $questId => $cleared){
+            $quest = $this->questFactory->getQuest($questId);
+            if($quest !== null){
+                $quest->setClearedCache($playerName, true);
+            }
+        }
+
+        $targets = [];
+        $normalizedSelection = strtolower($selection);
+
+        if($normalizedSelection === "current" || $normalizedSelection === "현재"){
+            $quest = $this->questFactory->getCurrentGuideQuest($player);
+            if($quest !== null){
+                $targets[] = $quest;
+            }
+        }elseif($normalizedSelection === "all" || $normalizedSelection === "전체"){
+            $targets = $this->questFactory->getGuideQuests();
+        }else{
+            $quest = $this->questFactory->getQuest($selection);
+            if($quest !== null && $quest->getType() === $quest::TYPE_GUIDE){
+                $targets[] = $quest;
+            }
+        }
+
+        $isBulkSelection = $normalizedSelection === "all" || $normalizedSelection === "전체";
+        $clearedCount = 0;
+        foreach($targets as $quest){
+            if($quest->isCleared($playerName)){
+                continue;
+            }
+
+            $quest->clear($player, !$isBulkSelection);
+            $clearedCount++;
+        }
+
+        if($isBulkSelection && $clearedCount > 0 && $player->isConnected()){
+            $this->sendQuestNotification($player);
+        }
+
+        return $clearedCount;
     }
 
     // ─────────────────────────────────────────────────────────────────
@@ -261,10 +458,6 @@ class Quests extends PluginBase implements Listener{
      * @priority MONITOR
      */
     public function handleBlockBreakEvent(BlockBreakEvent $event) : void{
-        if($event->isCancelled()){
-            return;
-        }
-
         foreach($this->questFactory->getQuests() as $quest){
             foreach($quest->getMissions() as $mission){
                 $mission->handleBlockBreakEvent($event);
@@ -288,13 +481,9 @@ class Quests extends PluginBase implements Listener{
     }
 
     /**
-     * @priority MONITOR
+     * @priority LOWEST
      */
     public function handleCommandEvent(CommandEvent $event) : void{
-        if($event->isCancelled()){
-            return;
-        }
-
         foreach($this->questFactory->getQuests() as $quest){
             foreach($quest->getMissions() as $mission){
                 $mission->handleCommandEvent($event);
