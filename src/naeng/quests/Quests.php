@@ -3,7 +3,6 @@
 namespace naeng\quests;
 
 use alvin0319\VotifierAPI\event\PlayerVoteEvent;
-use cosmicpe\npcdialogue\NpcDialogueManager;
 use Generator;
 use kim\present\sqlcore\SqlCore;
 use muqsit\invmenu\InvMenuHandler;
@@ -152,12 +151,6 @@ class Quests extends PluginBase implements Listener{
         // InvMenu 등록
         if(!InvMenuHandler::isRegistered()){
             InvMenuHandler::register($this);
-        }
-
-        // NpcDialogue 등록
-        if(!NpcDialogueManager::isRegistered()){
-            NpcDialogueManager::register($this);
-            $this->getLogger()->info("NpcDialogue 연동 완료");
         }
 
         // 초기 날짜 체크
