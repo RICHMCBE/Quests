@@ -161,7 +161,7 @@ class Quest{
         }
 
         if($notifyPlayer && $playerClass !== null){
-            $playerClass->sendMessage(Quests::PREFIX . "퀘스트 [ {$this->displayName} ] 를 클리어 하셨습니다!");
+            $playerClass->sendMessage("§r丌 퀘스트 [ {$this->displayName} ] 를 클리어 하셨습니다!");
         }
 
         $items = $this->getRewardItems();
