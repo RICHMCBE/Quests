@@ -3,7 +3,7 @@
 namespace naeng\quests\command;
 
 use Generator;
-use naeng\quests\form\QuestMainForm;
+use naeng\quests\form\AdminQuestMainForm;
 use naeng\quests\quest\Quest;
 use naeng\quests\quest\QuestFactory;
 use naeng\quests\Quests;
@@ -73,6 +73,6 @@ class QuestAdminCommand extends Command{
             return;
         }
 
-        $sender->sendForm(new QuestMainForm(QuestCommand::getInstance()));
+        $sender->sendForm(new AdminQuestMainForm($this, $this->questFactory));
     }
 }

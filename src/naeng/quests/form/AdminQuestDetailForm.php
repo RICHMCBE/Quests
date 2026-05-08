@@ -5,8 +5,9 @@ namespace naeng\quests\form;
 use Generator;
 use kim\present\loader\invmenu\AwaitInvMenu;
 use muqsit\invmenu\type\InvMenuTypeIds;
-use naeng\quests\command\QuestCommand;
+use naeng\quests\command\QuestAdminCommand;
 use naeng\quests\quest\Quest;
+use naeng\quests\quest\QuestFactory;
 use naeng\quests\Quests;
 use naeng\quests\utils\ItemUtils;
 use pocketmine\form\Form;
@@ -19,7 +20,8 @@ class AdminQuestDetailForm implements Form{
     private const ACTION_BACK   = 1;
 
     public function __construct(
-        private readonly QuestCommand $command,
+        private readonly QuestAdminCommand $command,
+        private readonly QuestFactory $questFactory,
         private readonly Quest $quest
     ){}
 
@@ -42,7 +44,7 @@ class AdminQuestDetailForm implements Form{
 
         match((int)$data){
             self::ACTION_REWARD => $this->openRewardEditor($player),
-            self::ACTION_BACK   => $this->command->execute($player, "", []),
+            self::ACTION_BACK   => $player->sendForm(new AdminQuestMainForm($this->command, $this->questFactory)),
             default => null
         };
     }
