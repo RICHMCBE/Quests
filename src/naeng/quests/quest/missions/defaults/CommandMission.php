@@ -77,7 +77,7 @@ class CommandMission extends Mission{
 
         // 완료 메시지 전송
         if($this->quest !== null){
-            $sender->sendPopup("§a§l[미션 완료] §r§f{$this->displayName}");
+            $sender->sendPopup("§r丌 §f{$this->displayName}");
             $this->quest->clearCheck($sender);
         }
         // 업데이트는 setProgress()와 clear()에서 자동으로 호출됨
