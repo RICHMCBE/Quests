@@ -349,11 +349,14 @@ class Quests extends PluginBase implements Listener{
 
     /**
      * 관리자용 가이드 퀘스트 강제 클리어
+     * Player 또는 플레이어명(프록시 환경 포함) 모두 허용
      *
      * @return Generator<int>
      */
-    public function forceClearGuideQuests(Player $player, string $selection = "current") : Generator{
-        $playerName = strtolower($player->getName());
+    public function forceClearGuideQuests(Player|string $player, string $selection = "current") : Generator{
+        $playerName  = strtolower($player instanceof Player ? $player->getName() : $player);
+        $playerClass = $player instanceof Player ? $player : $this->getServer()->getPlayerExact($player);
+
         $clearedQuests = yield from $this->databaseManager->loadAllCleared($playerName);
 
         foreach($clearedQuests as $questId => $cleared){
@@ -367,9 +370,12 @@ class Quests extends PluginBase implements Listener{
         $normalizedSelection = strtolower($selection);
 
         if($normalizedSelection === "current" || $normalizedSelection === "현재"){
-            $quest = $this->questFactory->getCurrentGuideQuest($player);
-            if($quest !== null){
-                $targets[] = $quest;
+            // 로컬 Player 객체가 있을 때만 현재 퀘스트 조회 가능
+            if($playerClass !== null){
+                $quest = $this->questFactory->getCurrentGuideQuest($playerClass);
+                if($quest !== null){
+                    $targets[] = $quest;
+                }
             }
         }elseif($normalizedSelection === "all" || $normalizedSelection === "전체"){
             $targets = $this->questFactory->getGuideQuests();
@@ -387,12 +393,13 @@ class Quests extends PluginBase implements Listener{
                 continue;
             }
 
-            $quest->clear($player, !$isBulkSelection);
+            // 로컬 플레이어면 알림 전송, 다른 서버면 이름만 전달(보상은 XuidCore/MailCore 처리)
+            $quest->clear($playerClass ?? $playerName, !$isBulkSelection);
             $clearedCount++;
         }
 
-        if($isBulkSelection && $clearedCount > 0 && $player->isConnected()){
-            $this->sendQuestNotification($player);
+        if($isBulkSelection && $clearedCount > 0 && $playerClass !== null && $playerClass->isConnected()){
+            $this->sendQuestNotification($playerClass);
         }
 
         return $clearedCount;
