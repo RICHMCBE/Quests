@@ -3,10 +3,15 @@
 namespace naeng\quests\quest;
 
 use cherrychip\EnchantBook\api\EnchantBookAPI;
+use naeng\quests\quest\missions\defaults\AttendanceClaimMission;
 use naeng\quests\quest\missions\defaults\CommandMission;
+use naeng\quests\quest\missions\defaults\DivingMineAcquireMission;
+use naeng\quests\quest\missions\defaults\ExchangeBuyMission;
 use naeng\quests\quest\missions\defaults\FishCatchMission;
 use naeng\quests\quest\missions\defaults\OreMineMission;
 use naeng\quests\quest\missions\defaults\PlantCropMission;
+use naeng\quests\quest\missions\defaults\PlayTimeMission;
+use naeng\quests\quest\missions\defaults\RankUpgradeMission;
 use naeng\quests\quest\missions\defaults\ShopSellMission;
 use naeng\quests\quest\missions\defaults\SpecificCropMission;
 use naeng\quests\quest\missions\defaults\ToolUpgradeMission;
@@ -31,18 +36,52 @@ class QuestRegistry{
      */
     public static function getDailyQuests() : array{
         $daily = new Quest("daily", "일일 퀘스트", Quest::TYPE_DAILY);
-        $daily->addMission(new VoteMission());
-        $daily->addMission(new SpecificCropMission(SpecificCropMission::CROP_WHEAT, 256));
-        $daily->addMission(new SpecificCropMission(SpecificCropMission::CROP_CARROT, 256));
-        $daily->addMission(new SpecificCropMission(SpecificCropMission::CROP_POTATO, 256));
-        $daily->addMission(new SpecificCropMission(SpecificCropMission::CROP_BEETROOT, 256));
-        $daily->addMission(new SpecificCropMission(SpecificCropMission::CROP_NETHER_WART, 128));
-        $daily->addMission(new SpecificCropMission(SpecificCropMission::CROP_MELON, 128));
-        $daily->addMission(new SpecificCropMission(SpecificCropMission::CROP_PUMPKIN, 128));
-        $daily->addMission(new SpecificCropMission(SpecificCropMission::CROP_SUGARCANE, 256));
 
+        // ─── 고정 미션 1: 접속시간 90분 ───
+        $daily->addMission(new PlayTimeMission(90));
+
+        // ─── 고정 미션 2: 서버 추천 2회 ───
+        $daily->addMission(new VoteMission(2));
+
+        // ─── 랜덤 미션 4개 (매일 달라짐) ───
+        $pool = self::buildRandomMissionPool();
+        shuffle($pool);
+        foreach(array_slice($pool, 0, 4) as $mission){
+            $daily->addMission($mission);
+        }
+
+        return [$daily];
+    }
+
+    /**
+     * 매일 랜덤으로 4개를 뽑을 미션 풀 (수량도 랜덤)
+     *
+     * @return \naeng\quests\quest\missions\Mission[]
+     */
+    private static function buildRandomMissionPool() : array{
         return [
-            $daily
+            // 작물 수확
+            new SpecificCropMission(SpecificCropMission::CROP_WHEAT,       mt_rand(128, 512)),
+            new SpecificCropMission(SpecificCropMission::CROP_CARROT,      mt_rand(128, 512)),
+            new SpecificCropMission(SpecificCropMission::CROP_POTATO,      mt_rand(128, 512)),
+            new SpecificCropMission(SpecificCropMission::CROP_BEETROOT,    mt_rand(64,  256)),
+            new SpecificCropMission(SpecificCropMission::CROP_NETHER_WART, mt_rand(64,  256)),
+            new SpecificCropMission(SpecificCropMission::CROP_MELON,       mt_rand(64,  256)),
+            new SpecificCropMission(SpecificCropMission::CROP_PUMPKIN,     mt_rand(64,  256)),
+            new SpecificCropMission(SpecificCropMission::CROP_SUGARCANE,   mt_rand(128, 512)),
+            // 광석 채굴
+            new OreMineMission(OreMineMission::ORE_STONE,   mt_rand(32,  128)),
+            new OreMineMission(OreMineMission::ORE_COAL,    mt_rand(16,   64)),
+            new OreMineMission(OreMineMission::ORE_IRON,    mt_rand(8,    32)),
+            new OreMineMission(OreMineMission::ORE_GOLD,    mt_rand(4,    16)),
+            new OreMineMission(OreMineMission::ORE_DIAMOND, mt_rand(2,     8)),
+            new OreMineMission(OreMineMission::ORE_EMERALD, mt_rand(1,     4)),
+            // 작물 심기
+            new PlantCropMission(PlantCropMission::PLANT_WHEAT,   mt_rand(64, 256)),
+            new PlantCropMission(PlantCropMission::PLANT_CARROT,  mt_rand(64, 256)),
+            new PlantCropMission(PlantCropMission::PLANT_POTATO,  mt_rand(64, 256)),
+            new PlantCropMission(PlantCropMission::PLANT_MELON,   mt_rand(32, 128)),
+            new PlantCropMission(PlantCropMission::PLANT_PUMPKIN, mt_rand(32, 128)),
         ];
     }
 
@@ -87,10 +126,7 @@ class QuestRegistry{
         // ─────────────────────────────────────────────
         $guide3 = new Quest("guide_3", "광물 판매하기", Quest::TYPE_GUIDE);
         $guide3->addMission(new CommandMission("상점", "/상점 명령어 사용하기"));
-        $guide3->addMission(new ShopSellMission("광물 상점", 1));
-        // 보상: 씨앗류 소량 (작물 심기 준비) + 골드 66,000
-        // 씨앗 아이템 가치: 밀씨앗4×250 + 당근4×150 + 감자4×150 + 수박씨1×900 + 호박씨1×750 = 3,850원
-        // 골드 포함 총 8,850원 → 추가 씨앗 구매 지원 역할
+        $guide3->addMission(new ShopSellMission("광물상점", 1));
         $guide3->setRewardItems([
             VanillaItems::WHEAT_SEEDS()->setCount(4),
             VanillaItems::CARROT()->setCount(4),
@@ -138,7 +174,7 @@ class QuestRegistry{
 
         // ─────────────────────────────────────────────
         // 가이드 퀘스트 6: 도구 강화해보기
-        // 연동: ToolCore에서 Quests::getInstance()->handleToolUpgrade($player) 호출 필요
+        // 연동: EnchantBook 강화 성공 시 Quests::getInstance()->handleToolUpgrade($player) 호출
         // ─────────────────────────────────────────────
         $guide6 = new Quest("guide_6", "도구 강화해보기", Quest::TYPE_GUIDE);
         $guide6->addMission(new CommandMission("강화", "/강화 명령어 사용하기"));
@@ -210,6 +246,126 @@ class QuestRegistry{
         $guide7->setRewardGold(75000);
 
         return [$guide7];
+    }
+
+    /**
+     * DivingMine 플러그인이 로드된 경우에만 등록되는 잠수광산 가이드 퀘스트
+     * @return Quest[]
+     */
+    public static function getDivingMineGuideQuests() : array{
+        // ─────────────────────────────────────────────
+        // 가이드 퀘스트 8: 잠수광산 도전하기
+        // 연동: DivingMine 플러그인 필요 (/잠광 명령어)
+        // 잠수광산은 채굴이 아닌 아이템 수집 컨텐츠
+        // ─────────────────────────────────────────────
+        $guide8 = new Quest("guide_8", "잠수광산 도전하기", Quest::TYPE_GUIDE);
+        $guide8->addMission(new CommandMission("잠광", "/잠광 명령어 사용하기"));
+        $guide8->addMission(new DivingMineAcquireMission(5));
+        $guide8->setRewardGold(70000);
+
+        return [$guide8];
+    }
+
+    /**
+     * NeighborPlugin이 로드된 경우에만 등록되는 길드 가이드 퀘스트
+     * @return Quest[]
+     */
+    public static function getNeighborhoodGuideQuests() : array{
+        // ─────────────────────────────────────────────
+        // 가이드 퀘스트 9: 길드 가입하기
+        // 연동: NeighborPlugin 필요 (/길드 명령어)
+        // ─────────────────────────────────────────────
+        $guide9 = new Quest("guide_9", "길드 가입하기", Quest::TYPE_GUIDE);
+        $guide9->addMission(new CommandMission("길드", "/길드 명령어 사용하기"));
+        $guide9->setRewardGold(50000);
+
+        return [$guide9];
+    }
+
+    /**
+     * AttendanceCheck 플러그인이 로드된 경우에만 등록되는 출석 가이드 퀘스트
+     * @return Quest[]
+     */
+    public static function getAttendanceGuideQuests() : array{
+        // ─────────────────────────────────────────────
+        // 가이드 퀘스트 10: 출석 체크하기
+        // 연동: AttendanceCheck 플러그인 필요 (/출석체크 명령어)
+        // ─────────────────────────────────────────────
+        $guide10 = new Quest("guide_10", "출석 체크하기", Quest::TYPE_GUIDE);
+        $guide10->addMission(new CommandMission("출석체크", "/출석체크 명령어 사용하기"));
+        $guide10->addMission(new AttendanceClaimMission(1));
+        $guide10->setRewardGold(30000);
+
+        return [$guide10];
+    }
+
+    /**
+     * RankPrefix 플러그인이 로드된 경우에만 등록되는 랭크 가이드 퀘스트
+     * @return Quest[]
+     */
+    public static function getRankGuideQuests() : array{
+        // ─────────────────────────────────────────────
+        // 가이드 퀘스트 11: 랭크 업그레이드하기
+        // 연동: RankPrefix 플러그인 필요 (/랭크 명령어)
+        // Stone 랭크 달성 시 창고 이용권이 보상으로 지급됨 → guide_12 창고로 연결
+        // ─────────────────────────────────────────────
+        $guide11 = new Quest("guide_11", "랭크 업그레이드하기", Quest::TYPE_GUIDE);
+        $guide11->addMission(new CommandMission("랭크", "/랭크 명령어 사용하기"));
+        $guide11->addMission(new RankUpgradeMission(1));
+        $guide11->setRewardGold(50000);
+
+        return [$guide11];
+    }
+
+    /**
+     * Warehouse 플러그인이 로드된 경우에만 등록되는 창고 가이드 퀘스트
+     * @return Quest[]
+     */
+    public static function getWarehouseGuideQuests() : array{
+        // ─────────────────────────────────────────────
+        // 가이드 퀘스트 12: 창고 사용하기
+        // 연동: Warehouse 플러그인 필요 (/창고 명령어)
+        // 창고 이용권은 Stone 랭크(guide_11) 달성 보상으로 지급됨
+        // ─────────────────────────────────────────────
+        $guide12 = new Quest("guide_12", "창고 사용하기", Quest::TYPE_GUIDE);
+        $guide12->addMission(new CommandMission("창고", "/창고 명령어 사용하기"));
+        $guide12->setRewardGold(20000);
+
+        return [$guide12];
+    }
+
+    /**
+     * UserExchange 플러그인이 로드된 경우에만 등록되는 거래소 가이드 퀘스트
+     * @return Quest[]
+     */
+    public static function getExchangeGuideQuests() : array{
+        // ─────────────────────────────────────────────
+        // 가이드 퀘스트 13: 거래소 이용하기
+        // 연동: UserExchange 플러그인 필요 (/거래소 명령어)
+        // ─────────────────────────────────────────────
+        $guide13 = new Quest("guide_13", "거래소 이용하기", Quest::TYPE_GUIDE);
+        $guide13->addMission(new CommandMission("거래소", "/거래소 명령어 사용하기"));
+        $guide13->addMission(new ExchangeBuyMission(1));
+        $guide13->setRewardGold(40000);
+
+        return [$guide13];
+    }
+
+    /**
+     * NeighborhoodShop 플러그인이 로드된 경우에만 등록되는 길드상점 가이드 퀘스트
+     * @return Quest[]
+     */
+    public static function getNeighborhoodShopGuideQuests() : array{
+        // ─────────────────────────────────────────────
+        // 가이드 퀘스트 14: 길드상점 이용하기
+        // 연동: NeighborhoodShop 플러그인 필요 (/길드상점 명령어)
+        // guide_9 길드 가입 이후 자연스럽게 연결
+        // ─────────────────────────────────────────────
+        $guide14 = new Quest("guide_14", "길드상점 이용하기", Quest::TYPE_GUIDE);
+        $guide14->addMission(new CommandMission("길드상점", "/길드상점 명령어 사용하기"));
+        $guide14->setRewardGold(30000);
+
+        return [$guide14];
     }
 
     /**
