@@ -8,6 +8,7 @@ use naeng\quests\quest\missions\defaults\CommandMission;
 use naeng\quests\quest\missions\defaults\DivingMineAcquireMission;
 use naeng\quests\quest\missions\defaults\ExchangeBuyMission;
 use naeng\quests\quest\missions\defaults\FishCatchMission;
+use naeng\quests\quest\missions\defaults\MonsterKillMission;
 use naeng\quests\quest\missions\defaults\OreMineMission;
 use naeng\quests\quest\missions\defaults\PlantCropMission;
 use naeng\quests\quest\missions\defaults\PlayTimeMission;
@@ -366,6 +367,31 @@ class QuestRegistry{
         $guide14->setRewardGold(30000);
 
         return [$guide14];
+    }
+
+    /**
+     * Monster 플러그인이 로드된 경우에만 등록되는 사냥 가이드 퀘스트
+     * @return Quest[]
+     */
+    public static function getMonsterGuideQuests() : array{
+        // ─────────────────────────────────────────────
+        // 가이드 퀘스트: 사냥 도전하기
+        // 연동: Monster 플러그인 필요 (MonsterDeathEvent)
+        // ─────────────────────────────────────────────
+        $guideHunt = new Quest("guide_hunt", "사냥 도전하기", Quest::TYPE_GUIDE);
+        $guideHunt->addMission(new MonsterKillMission(MonsterKillMission::TYPE_COW,     3));
+        $guideHunt->addMission(new MonsterKillMission(MonsterKillMission::TYPE_PIG,     3));
+        $guideHunt->addMission(new MonsterKillMission(MonsterKillMission::TYPE_CHICKEN, 5));
+        // 보상: 골드 65,000 + 기본 재료 아이템
+        // 소·돼지·닭 처치로 도시락 재료 수급 흐름 체험
+        $guideHunt->setRewardItems([
+            VanillaItems::STEAK()->setCount(4),
+            VanillaItems::COOKED_PORKCHOP()->setCount(4),
+            VanillaItems::COOKED_CHICKEN()->setCount(6),
+        ]);
+        $guideHunt->setRewardGold(65000);
+
+        return [$guideHunt];
     }
 
     /**

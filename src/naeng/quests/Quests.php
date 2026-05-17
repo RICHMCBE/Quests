@@ -11,10 +11,12 @@ use naeng\quests\command\QuestCommand;
 use naeng\quests\database\DatabaseManager;
 use naeng\quests\listener\FishQuestListener;
 use naeng\PlayingTime\PlayingTime;
+use naeng\quests\listener\MonsterQuestListener;
 use naeng\quests\quest\missions\defaults\PlayTimeMission;
 use naeng\quests\quest\missions\defaults\AttendanceClaimMission;
 use naeng\quests\quest\missions\defaults\DivingMineAcquireMission;
 use naeng\quests\quest\missions\defaults\ExchangeBuyMission;
+use naeng\quests\quest\missions\defaults\MonsterKillMission;
 use naeng\quests\quest\missions\defaults\RankUpgradeMission;
 use naeng\quests\quest\missions\defaults\ShopSellMission;
 use naeng\quests\quest\missions\defaults\ToolUpgradeMission;
@@ -143,6 +145,15 @@ class Quests extends PluginBase implements Listener{
                 $this->questFactory->addQuest($quest);
             }
             $this->getLogger()->info("NeighborhoodShop 연동 완료 - 길드상점 가이드 퀘스트 활성화");
+        }
+
+        // Monster 연동
+        if($this->getServer()->getPluginManager()->getPlugin("Monster") !== null){
+            $this->getServer()->getPluginManager()->registerEvents(new MonsterQuestListener(), $this);
+            foreach(QuestRegistry::getMonsterGuideQuests() as $quest){
+                $this->questFactory->addQuest($quest);
+            }
+            $this->getLogger()->info("Monster 연동 완료 - 사냥 가이드 퀘스트 활성화");
         }
 
         // DB에서 보상 데이터 로드
@@ -334,6 +345,19 @@ class Quests extends PluginBase implements Listener{
     }
 
     /**
+     * Monster 플러그인에서 몬스터 처치 시 호출 (MonsterQuestListener에서 자동 호출)
+     */
+    public function handleMonsterKill(Player $player, string $monsterType) : void{
+        foreach($this->questFactory->getQuests() as $quest){
+            foreach($quest->getMissions() as $mission){
+                if($mission instanceof MonsterKillMission){
+                    $mission->handleMonsterKill($player, $monsterType);
+                }
+            }
+        }
+    }
+
+    /**
      * ToolCore에서 도구 강화 완료 시 호출
      * 예) Quests::getInstance()->handleToolUpgrade($player);
      */
@@ -444,7 +468,8 @@ class Quests extends PluginBase implements Listener{
             }
 
             // 데이터 로드 완료 후 퀘스트 정보 표시 (타이틀)
-            if($player->isOnline()){
+            // 길라잡이를 모두 완료한 플레이어는 알림 불필요
+            if($player->isOnline() && $this->questFactory->getCurrentGuideQuest($player) !== null){
                 $this->getScheduler()->scheduleDelayedTask(new ClosureTask(function() use($player) : void{
                     if($player->isOnline()){
                         $this->sendQuestNotification($player);
@@ -534,9 +559,8 @@ class Quests extends PluginBase implements Listener{
     public function sendQuestNotification(Player $player) : void{
         $quest = $this->questFactory->getCurrentGuideQuest($player);
 
-        // 모든 가이드 퀘스트 완료 시 타이틀 제거
+        // 모든 가이드 퀘스트 완료 시 타이틀 전송하지 않음
         if($quest === null){
-            $player->sendTitle("§A§D", "");
             return;
         }
 
