@@ -1,7 +1,7 @@
 name: Quests
 author: naeng
 main: naeng\quests\Quests
-version: 1.5.11
+version: 1.5.12
 api: 5.0.0
 depend:
   - XuidCore
@@ -28,8 +28,8 @@ virions:
   - presentkim-pm/item-serialize-utils/3.1.0
 permissions:
   quests.staff.command:
-    description: "퀘스트를 관리하기 위한 권한입니다"
+    description: "?�스?��? 관리하�??�한 권한?�니??
     default: op
   quests.user.command:
-    description: "퀘스트를 하기 위한 권한입니다"
+    description: "?�스?��? ?�기 ?�한 권한?�니??
     default: true
