@@ -9,11 +9,13 @@ use muqsit\invmenu\InvMenuHandler;
 use naeng\quests\command\QuestAdminCommand;
 use naeng\quests\command\QuestCommand;
 use naeng\quests\database\DatabaseManager;
+use naeng\quests\listener\DiscordQuestListener;
 use naeng\quests\listener\FishQuestListener;
 use naeng\PlayingTime\PlayingTime;
 use naeng\quests\listener\MonsterQuestListener;
 use naeng\quests\quest\missions\defaults\PlayTimeMission;
 use naeng\quests\quest\missions\defaults\AttendanceClaimMission;
+use naeng\quests\quest\missions\defaults\DiscordAuthMission;
 use naeng\quests\quest\missions\defaults\DivingMineAcquireMission;
 use naeng\quests\quest\missions\defaults\ExchangeBuyMission;
 use naeng\quests\quest\missions\defaults\MonsterKillMission;
@@ -78,6 +80,15 @@ class Quests extends PluginBase implements Listener{
 
         // 이벤트 리스너 등록
         $this->getServer()->getPluginManager()->registerEvents($this, $this);
+
+        // DiscordCore 연동
+        if($this->getServer()->getPluginManager()->getPlugin("DiscordCore") !== null){
+            $this->getServer()->getPluginManager()->registerEvents(new DiscordQuestListener(), $this);
+            foreach(QuestRegistry::getDiscordGuideQuests() as $quest){
+                $this->questFactory->addQuest($quest);
+            }
+            $this->getLogger()->info("DiscordCore 연동 완료 - 디스코드 인증 가이드 퀘스트 활성화");
+        }
 
         // FishPlugin 연동
         if($this->getServer()->getPluginManager()->getPlugin("FishPlugin") !== null){
@@ -352,6 +363,20 @@ class Quests extends PluginBase implements Listener{
             foreach($quest->getMissions() as $mission){
                 if($mission instanceof MonsterKillMission){
                     $mission->handleMonsterKill($player, $monsterType);
+                }
+            }
+        }
+    }
+
+    /**
+     * DiscordCore에서 인증 완료 시 호출
+     * 예) Quests::getInstance()->handleDiscordAuth($player);
+     */
+    public function handleDiscordAuth(Player $player) : void{
+        foreach($this->questFactory->getQuests() as $quest){
+            foreach($quest->getMissions() as $mission){
+                if($mission instanceof DiscordAuthMission){
+                    $mission->handleAuth($player);
                 }
             }
         }
