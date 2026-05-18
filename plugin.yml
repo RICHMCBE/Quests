@@ -1,7 +1,7 @@
 name: Quests
 author: naeng
 main: naeng\quests\Quests
-version: 1.5.12
+version: 1.5.13
 api: 5.0.0
 depend:
   - XuidCore
@@ -9,6 +9,7 @@ depend:
   - MailCore
   - SqlCore
 softdepend:
+  - DiscordCore
   - HelloPlayer
   - Customies
   - DivingMine
